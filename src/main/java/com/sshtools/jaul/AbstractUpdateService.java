@@ -174,6 +174,8 @@ public abstract class AbstractUpdateService implements UpdateService {
 	}
 
 	protected final void update(boolean check) throws IOException {
+		if(isUpdating())
+			throw new IllegalStateException("Already updating.");
 		if (!isUpdatesEnabled()) {
 			log.info("Updates disabled.");
 			setAvailableVersion(null);
