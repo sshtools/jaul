@@ -5,6 +5,13 @@ import java.io.IOException;
 public class NoUpdateService implements UpdateService {
 
 
+	private UpdateableAppContext context;
+
+	public NoUpdateService(UpdateableAppContext context) {
+		super();
+		this.context = context;
+	}
+
 	@Override
 	public void addDownloadListener(DownloadListener listener) {
 	}
@@ -53,6 +60,11 @@ public class NoUpdateService implements UpdateService {
 	@Override
 	public String getAvailableVersion() {
 		return null;
+	}
+
+	@Override
+	public UpdateableAppContext getContext() {
+		return context;
 	}
 
 }

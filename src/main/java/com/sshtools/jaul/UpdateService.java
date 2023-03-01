@@ -32,6 +32,8 @@ public interface UpdateService {
 		void downloadEvent(DownloadEvent event);
 	}
 	
+	UpdateableAppContext getContext();
+	
 	void addDownloadListener(DownloadListener listener);
 
 	void removeDownloadListener(DownloadListener listener);

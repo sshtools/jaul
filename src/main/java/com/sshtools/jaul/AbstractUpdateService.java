@@ -33,7 +33,8 @@ public abstract class AbstractUpdateService implements UpdateService {
 		downloadListeners.add(listener);
 	}
 
-	protected final UpdateableAppContext getContext() {
+	@Override
+	public final UpdateableAppContext getContext() {
 		return context;
 	}
 
@@ -118,8 +119,13 @@ public abstract class AbstractUpdateService implements UpdateService {
 		long when = nowDay + day + TimeUnit.HOURS.toMillis(12)
 				+ (long) (Math.random() * 3.0d * (double) TimeUnit.HOURS.toMillis(3));
 		setDeferUntil(when);
-		log.info("Deferring update for " + DateFormat.getDateTimeInstance().format(new Date(when)) + " days");
-		rescheduleCheck(0);
+		try {
+			rescheduleCheck(0);
+			log.info("Deferred update for " + DateFormat.getDateTimeInstance().format(new Date(when)) + " days");
+		}
+		catch(UnsupportedOperationException uoe) {
+			log.info("No scheduler, update check will not occur this runtime.");
+		}
 	}
 
 	protected abstract String doUpdate(boolean check) throws IOException;

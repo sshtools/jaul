@@ -13,6 +13,9 @@ First add some `<properties/>` tags.
 ```xml
 <build.phase>continuous</build.phase>	
 <build.mediaTypes>windows,unixInstaller,macos,macosFolder,windowsArchive,unixArchive,linuxRPM,linuxDeb,macosArchive,macosFolderArchive</build.mediaTypes>
+<build.install4j.project>${project.basedir}/installer.install4j</build.install4j.project>
+<build.projectProperties>${basedir}/jadaptive.build.properties</build.projectProperties>
+<build.userProperties>${user.home}/.jadaptive.build.properties</build.userProperties>
 ```
 
 Now you'll need a `<dependency/>`.
@@ -44,6 +47,10 @@ Now you'll need to add some plugins. First off, copy and paste the following int
 
 ```xml
 
+<plugin>
+	<groupId>org.codehaus.mojo</groupId>
+	<artifactId>properties-maven-plugin</artifactId>
+</plugin>
 <plugin>
 	<groupId>org.codehaus.mojo</groupId>
 	<artifactId>build-helper-maven-plugin</artifactId>
@@ -113,8 +120,8 @@ And then the following into `<build>` / `<pluginManagement>` / `<plugins>`.
 				<configuration>
 					<quiet>true</quiet>
 					<files>
-						<file>${basedir}/jadaptive.build.properties</file>
-						<file>${user.home}/.jadaptive.build.properties</file>
+						<file>${build.projectProperties}s</file>
+						<file>${build.userProperties}</file>
 					</files>
 				</configuration>
 			</execution>
@@ -129,6 +136,16 @@ And then the following into `<build>` / `<pluginManagement>` / `<plugins>`.
 		<groupId>org.codehaus.mojo</groupId>
 		<artifactId>build-helper-maven-plugin</artifactId>
 		<version>3.3.0</version>
+	</plugin>
+	<plugin>
+		<groupId>com.install4j</groupId>
+		<artifactId>install4j-maven</artifactId>
+		<version>10.0.4</version>
+	</plugin>
+	<plugin>
+		<groupId>org.apache.maven.plugins</groupId>
+		<artifactId>maven-antrun-plugin</artifactId>
+		<version>1.8</version>
 	</plugin>
 </plugins>
 ```
@@ -156,6 +173,87 @@ You'll also need some `<repositories/>` and `<pluginRepositories>`.
 		<url>https://maven.ej-technologies.com/repository</url>
 	</pluginRepository>
 </pluginRepositories>
+```
+
+Now add a new `<profile>` that is activated by the `buildInstaller` system property.
+
+```xml
+<profile>
+	<id>install4j-installers</id>
+	<activation>
+		<property>
+			<name>buildInstaller</name>
+			<value>true</value>
+		</property>
+	</activation>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<configuration>
+							<target>
+								<copy file="${project.build.directory}/${project.artifactId}-${project.version}.jar" tofile="${project.build.directory}/${project.artifactId}.jar" />
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<configuration>
+					<outputDirectory>${project.build.directory}/dependencies</outputDirectory>
+				</configuration>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<stripVersion>true</stripVersion>
+							<outputDirectory>${project.build.directory}/dependencies/common</outputDirectory>
+							<stripVersion>true</stripVersion>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.install4j</groupId>
+				<artifactId>install4j-maven</artifactId>
+				<executions>
+					<execution>
+						<id>compile-installers</id>
+						<phase>package</phase>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+						<configuration>
+							<variables>
+								<build.phase>${build.phase}</build.phase>
+							</variables>
+							<release>${product.version}-${build.number}</release>
+							<mediaTypes>${build.mediaTypes}</mediaTypes>
+							<projectFile>${build.install4j.project}</projectFile>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</profile>
 ```
 
 ### Java (ie. the Application itself)
