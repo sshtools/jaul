@@ -60,8 +60,8 @@ public abstract class AbstractUpdateService implements UpdateService {
 	@Override
 	public final Phase[] getPhases() {
 		return Arrays.asList(Phase.values()).stream()
-				.filter(p ->  p != Phase.CONTINUOUS || (p == Phase.CONTINUOUS && Boolean.getBoolean("jaul.continuous")
-						|| Boolean.getBoolean("jadaptive.development")))
+				.filter(p -> p != Phase.CONTINUOUS || (p == Phase.CONTINUOUS
+						&& ( Boolean.getBoolean("jaul.continuous") || Boolean.getBoolean("jadaptive.development"))))
 				.collect(Collectors.toList()).toArray(new Phase[0]);
 	}
 
