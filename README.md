@@ -128,11 +128,6 @@ And then the following into `<build>` / `<pluginManagement>` / `<plugins>`.
 		</executions>
 	</plugin>
 	<plugin>
-		<groupId>com.install4j</groupId>
-		<artifactId>install4j-maven</artifactId>
-		<version>9.0.5</version>
-	</plugin>
-	<plugin>
 		<groupId>org.codehaus.mojo</groupId>
 		<artifactId>build-helper-maven-plugin</artifactId>
 		<version>3.3.0</version>
