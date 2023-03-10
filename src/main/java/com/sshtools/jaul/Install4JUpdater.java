@@ -11,12 +11,14 @@ import org.slf4j.LoggerFactory;
 
 import com.install4j.api.context.UserCanceledException;
 import com.install4j.api.launcher.ApplicationLauncher;
+import com.install4j.api.launcher.ApplicationLauncher.Callback;
+import com.install4j.api.launcher.ApplicationLauncher.ProgressListener;
 import com.install4j.api.update.ApplicationDisplayMode;
 import com.install4j.api.update.UpdateChecker;
 import com.install4j.api.update.UpdateDescriptor;
 
 public final class Install4JUpdater implements Callable<String> {
-	
+
 	public final static class Install4JUpdaterBuilder {
 
 		private Optional<String> updateUrl = Optional.empty();
@@ -25,60 +27,60 @@ public final class Install4JUpdater implements Callable<String> {
 		private Optional<String> currentVersion = Optional.empty();
 		private Optional<String> launcherId = Optional.empty();
 		private Optional<Consumer<Integer>> onExit = Optional.empty();
-		
+
 		public static Install4JUpdaterBuilder builder() {
 			return new Install4JUpdaterBuilder();
 		}
-		
+
 		public Install4JUpdaterBuilder withConsoleMode() {
 			return withConsoleMode(true);
 		}
-		
+
 		public Install4JUpdaterBuilder withConsoleMode(boolean consoleMode) {
 			this.consoleMode = consoleMode;
 			return this;
 		}
-		
+
 		public Install4JUpdaterBuilder withUpdate() {
 			return withCheckOnly(false);
 		}
-		
+
 		public Install4JUpdaterBuilder withCheckOnly() {
 			return withCheckOnly(true);
 		}
-		
+
 		public Install4JUpdaterBuilder withCheckOnly(boolean checkOnly) {
 			this.checkOnly = checkOnly;
 			return this;
 		}
-		
+
 		public Install4JUpdaterBuilder withUpdateUrl(String updateUrl) {
 			return withUpdateUrl(Optional.of(updateUrl));
 		}
-		
+
 		public Install4JUpdaterBuilder withUpdateUrl(Optional<String> updateUrl) {
 			this.updateUrl = updateUrl;
 			return this;
 		}
-		
+
 		public Install4JUpdaterBuilder withCurrentVersion(String currentVersion) {
 			return withCurrentVersion(Optional.of(currentVersion));
 		}
-		
+
 		public Install4JUpdaterBuilder withCurrentVersion(Optional<String> currentVersion) {
 			this.currentVersion = currentVersion;
 			return this;
 		}
-		
+
 		public Install4JUpdaterBuilder withLauncherId(String launcherId) {
 			return withLauncherId(Optional.of(launcherId));
 		}
-		
+
 		public Install4JUpdaterBuilder withLauncherId(Optional<String> launcherId) {
 			this.launcherId = launcherId;
 			return this;
 		}
-		
+
 		public Install4JUpdaterBuilder onExit(Consumer<Integer> onExit) {
 			this.onExit = Optional.of(onExit);
 			return this;
@@ -87,7 +89,7 @@ public final class Install4JUpdater implements Callable<String> {
 		public Install4JUpdater build() {
 			return new Install4JUpdater(this);
 		}
-		
+
 	}
 
 	static Logger log = LoggerFactory.getLogger(Install4JUpdateService.class);
@@ -101,9 +103,11 @@ public final class Install4JUpdater implements Callable<String> {
 	private Install4JUpdater(Install4JUpdaterBuilder builder) {
 		this.uurl = builder.updateUrl.orElseThrow(() -> new IllegalStateException("Must provide update URL"));
 		this.consoleMode = builder.consoleMode;
-		this.currentVersion = builder.currentVersion.orElseThrow(() -> new IllegalStateException("Current version must be supplied"));
-		this.launcherId = builder.launcherId.orElseThrow(() -> new IllegalStateException("Launcher ID must be supplied"));
-		this.checkOnly= builder.checkOnly;
+		this.currentVersion = builder.currentVersion
+				.orElseThrow(() -> new IllegalStateException("Current version must be supplied"));
+		this.launcherId = builder.launcherId
+				.orElseThrow(() -> new IllegalStateException("Launcher ID must be supplied"));
+		this.checkOnly = builder.checkOnly;
 		this.onExit = builder.onExit;
 	}
 
@@ -135,20 +139,27 @@ public final class Install4JUpdater implements Callable<String> {
 				return availableVersion;
 			} else {
 				String[] args;
-				if(consoleMode)
-					args =new String[] { "-c" };
+				if (consoleMode)
+					args = new String[] { "-c" };
 				else
 					args = new String[0];
-				ApplicationLauncher.launchApplicationInProcess(launcherId, args,
-						new ApplicationLauncher.Callback() {
-							public void exited(int exitValue) {
-								onExit.ifPresent(oe -> oe.accept(exitValue));
-							}
+				ApplicationLauncher.launchApplicationInProcess(launcherId, args, new ApplicationLauncher.Callback() {
+					@Override
+					public void exited(int exitValue) {
+						onExit.ifPresent(oe -> oe.accept(exitValue));
+					}
 
-							public void prepareShutdown() {
-								// TODO add your code here (not invoked on event dispatch thread)
-							}
-						}, ApplicationLauncher.WindowMode.FRAME, null);
+					@Override
+					public void prepareShutdown() {
+						// TODO add your code here (not invoked on event dispatch thread)
+					}
+
+					@Override
+					public ProgressListener createProgressListener() {
+						// TODO Auto-generated method stub
+						return Callback.super.createProgressListener();
+					}
+				}, ApplicationLauncher.WindowMode.FRAME, null);
 			}
 		} catch (UserCanceledException e) {
 			log.info("Cancelled.");

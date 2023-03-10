@@ -16,6 +16,10 @@ public class ArtifactVersion {
 		return getVersion(null, groupId, artifactId);
 	}
 	
+	public static boolean isDeveloperWorkspace() {
+		return new File("pom.xml").exists();
+	}
+	
 	public static String getVersion(String installerShortName, String groupId, String artifactId) {
 		String fakeVersion = Boolean.getBoolean("jadaptive.development")
 				? System.getProperty("jadaptive.development.version", System.getProperty("jadaptive.devVersion"))

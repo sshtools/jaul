@@ -1,6 +1,7 @@
 package com.sshtools.jaul;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 public class NoUpdateService implements UpdateService {
 
@@ -65,6 +66,10 @@ public class NoUpdateService implements UpdateService {
 	@Override
 	public UpdateableAppContext getContext() {
 		return context;
+	}
+
+	@Override
+	public void setOnAvailableVersion(Consumer<String> onAvailableVersion) {
 	}
 
 }

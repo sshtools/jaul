@@ -1,6 +1,7 @@
 package com.sshtools.jaul;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 public interface UpdateService {
 
@@ -58,4 +59,6 @@ public interface UpdateService {
 	
 	default void rescheduleCheck() {
 	}
+
+	void setOnAvailableVersion(Consumer<String> onAvailableVersion);
 }

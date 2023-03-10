@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -23,9 +25,15 @@ public abstract class AbstractUpdateService implements UpdateService {
 	private ScheduledFuture<?> checkTask;
 	private long deferUntil;
 	private final UpdateableAppContext context;
+	private Optional<Consumer<String>> onAvailableVersion = Optional.empty();
 	
 	protected AbstractUpdateService(UpdateableAppContext context) {
 		this.context = context;
+	}
+
+	@Override
+	public final void setOnAvailableVersion(Consumer<String> onAvailableVersion) {
+		this.onAvailableVersion = Optional.of(onAvailableVersion);
 	}
 
 	@Override
@@ -61,7 +69,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 	public final Phase[] getPhases() {
 		return Arrays.asList(Phase.values()).stream()
 				.filter(p -> p != Phase.CONTINUOUS || (p == Phase.CONTINUOUS
-						&& ( Boolean.getBoolean("jaul.continuous") || Boolean.getBoolean("jadaptive.development"))))
+						&& ( ArtifactVersion.isDeveloperWorkspace() || Boolean.getBoolean("jaul.continuous") || Boolean.getBoolean("jadaptive.development"))))
 				.collect(Collectors.toList()).toArray(new Phase[0]);
 	}
 
@@ -89,10 +97,10 @@ public abstract class AbstractUpdateService implements UpdateService {
 	public final void rescheduleCheck() {
 		cancelTask();
 		deferUntil = context.getUpdatesDeferredUntil();
-		if (deferUntil > 0) {
+//		if (deferUntil > 0) {
 			rescheduleCheck(TimeUnit.SECONDS.toMillis(12));
-		} else
-			deferUntil = 0;
+//		} else
+//			deferUntil = 0;
 	}
 	
 	@Override
@@ -159,6 +167,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 
 	protected void setAvailableVersion(String availableVersion) {
 		this.availableVersion = availableVersion;
+		onAvailableVersion.ifPresent(v -> v.accept(availableVersion));
 	}
 
 	protected final void setDeferUntil(long deferUntil) {
