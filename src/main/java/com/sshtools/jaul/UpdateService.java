@@ -43,6 +43,8 @@ public interface UpdateService {
 
 	boolean isUpdating();
 
+	boolean isCheckOnly();
+
 	Phase[] getPhases();
 
 	String getAvailableVersion();
@@ -61,4 +63,6 @@ public interface UpdateService {
 	}
 
 	void setOnAvailableVersion(Consumer<String> onAvailableVersion);
+
+	void setOnBusy(Consumer<Boolean> busy);
 }

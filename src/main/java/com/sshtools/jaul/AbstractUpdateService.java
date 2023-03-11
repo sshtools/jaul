@@ -26,6 +26,9 @@ public abstract class AbstractUpdateService implements UpdateService {
 	private long deferUntil;
 	private final UpdateableAppContext context;
 	private Optional<Consumer<String>> onAvailableVersion = Optional.empty();
+	private Optional<Consumer<Boolean>> onBusy = Optional.empty();
+
+	private boolean checkOnly;
 	
 	protected AbstractUpdateService(UpdateableAppContext context) {
 		this.context = context;
@@ -34,6 +37,11 @@ public abstract class AbstractUpdateService implements UpdateService {
 	@Override
 	public final void setOnAvailableVersion(Consumer<String> onAvailableVersion) {
 		this.onAvailableVersion = Optional.of(onAvailableVersion);
+	}
+
+	@Override
+	public final void setOnBusy(Consumer<Boolean> onBusy) {
+		this.onBusy = Optional.of(onBusy);
 	}
 
 	@Override
@@ -115,6 +123,11 @@ public abstract class AbstractUpdateService implements UpdateService {
 		update(false);
 	}
 
+	@Override
+	public boolean isCheckOnly() {
+		return checkOnly;
+	}
+
 	protected final void cancelTask() {
 		if (checkTask != null) {
 			checkTask.cancel(false);
@@ -174,8 +187,10 @@ public abstract class AbstractUpdateService implements UpdateService {
 		this.deferUntil = deferUntil;
 	}
 
-	protected void setUpdating(boolean updating) {
+	protected void setUpdating(boolean updating, boolean checkOnly) {
+		this.checkOnly = checkOnly;
 		this.updating = updating;
+		onBusy.ifPresent(b -> b.accept(updating));
 	}
 
 	protected final void timedCheck() {
@@ -198,11 +213,11 @@ public abstract class AbstractUpdateService implements UpdateService {
 			long defer = getDeferUntil();
 			if (!check || defer == 0 || System.currentTimeMillis() >= defer) {
 				setDeferUntil(0);
-				setUpdating(true);
+				setUpdating(true, check);
 				try {
 					setAvailableVersion(doUpdate(check));
 				} finally {
-					setUpdating(false);
+					setUpdating(false, check);
 					if (check) {
 						rescheduleCheck(0);
 					}

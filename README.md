@@ -6,6 +6,11 @@ Adds update features to several JAdaptive projects via the Install4J runtime. In
 
 There are 4 main areas that will need changing to add multi-channel update support to an application.
 
+ * Maven
+ * Java (ie. the Application itself)
+ * Install4J Project
+ * Jenkins Build  
+
 ### Maven
 
 First add some `<properties/>` tags.
@@ -261,7 +266,7 @@ How to do this will depend on the type of application. There are currently 3 maj
  
 #### Command Line Application
 
-TODO
+Assuming you are using the `command-utils` module, you will be provide t
 
 #### JavaFX GUI Application
 
@@ -278,8 +283,8 @@ The Install4J project should be setup in the normal way, with the following addi
  1. Create a *Compiler Variable* named `build.phase`. Give it a default value of `continuous`.
  1. You will need a launcher that can accept `--jaul-register` or `--jaul-deregister` arguments. You should have a `main()` class that can do this if you followed the above integration instructions. It is usually fine to re-use the launcher for the application, but some circumstances may require a dedicated lancher (e.g. service without a console mode). 
  1. The launcher should also have a *VM Parameter* configured. Add `-Dinstall4j.installationDir=${installer:sys.installationDir}`.  
- 1. In *Screens and Actions* add a new *Run executable or batch file* **Action** at the very end of the *Installer*. Have it call the above the launcher, and pass the `--jaul-register` as an argument.
- 1. In *Screens and Actions* add a new *Run executable or batch file* **Action** at the very end of the *Uninstaller*. Have it call the above the launcher, and pass the `--jaul-deregister` as an argument.
+ 1. In *Screens and Actions* add a new *Run executable or batch file* **Action** at the very *end* of the *Installer*. Have it call the above the launcher, and pass the `--jaul-register` as an argument.
+ 1. In *Screens and Actions* add a new *Run executable or batch file* **Action** at the very *start* of the *Uninstaller*. Have it call the above the launcher, and pass the `--jaul-deregister` as an argument.
  1. In *Screens and Actions* add a new *Application*,  and choose **Standalond update donwloader**.
  1. Configure this application to have an *Executable Name* of `updater`. Change *Default execution mode* to *Unattended with progress dialog* and the title for the progress dialog to suit your needs.
  1. Take a note of the *ID* of the Standalone update download (you can turn on showing IDs in the *Project* menubar menu.

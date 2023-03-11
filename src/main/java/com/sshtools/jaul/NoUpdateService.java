@@ -72,4 +72,13 @@ public class NoUpdateService implements UpdateService {
 	public void setOnAvailableVersion(Consumer<String> onAvailableVersion) {
 	}
 
+	@Override
+	public void setOnBusy(Consumer<Boolean> busy) {
+	}
+
+	@Override
+	public boolean isCheckOnly() {
+		return false;
+	}
+
 }
