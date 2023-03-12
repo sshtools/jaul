@@ -289,7 +289,7 @@ The Install4J project should be setup in the normal way, with the following addi
  1. Configure this application to have an *Executable Name* of `updater`. Change *Default execution mode* to *Unattended with progress dialog* and the title for the progress dialog to suit your needs.
  1. Take a note of the *ID* of the Standalone update download (you can turn on showing IDs in the *Project* menubar menu.
  1. Go to *Auto-Update Options* and add the *URL for updates XML*. This is the final public location where the `updates.xml` will be uploaded to and made available. It will contain the `build.phase  variable. For example, https://sshtools-public.s3.eu-west-1.amazonaws.com/push-sftp-gui/${compiler:build.phase}/updates.xml
- 1. Select *Base URL for installers* and add the same URL, but without the `update.xml` filename on the end. This URL *must* have a trailing `/`.
+ 1. Select *Base URL for installers* and add the same URL, but without the `update.xml` and phase parts on the end, but instead the full version. For example, https://sshtools-public.s3.eu-west-1.amazonaws.com/push-sftp-gui/${compiler:sys,version}/. This URL *must* have a trailing `/`.
  
 Save the project. Now add the ID you noted to the Java application's `@JaulApp` annotation.
 

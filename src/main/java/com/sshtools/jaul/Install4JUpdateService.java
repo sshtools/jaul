@@ -13,8 +13,8 @@ public class Install4JUpdateService extends AbstractUpdateService {
 	
 	private final Install4JUpdaterBuilder builder;
 
-	public Install4JUpdateService(UpdateableAppContext context, Install4JUpdaterBuilder builder) {
-		super(context);
+	public Install4JUpdateService(UpdateableAppContext context, Install4JUpdaterBuilder builder, String currentVersion) {
+		super(context, currentVersion);
 		this.builder = builder;
 	}
 

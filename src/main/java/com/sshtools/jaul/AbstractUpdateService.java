@@ -27,11 +27,16 @@ public abstract class AbstractUpdateService implements UpdateService {
 	private final UpdateableAppContext context;
 	private Optional<Consumer<String>> onAvailableVersion = Optional.empty();
 	private Optional<Consumer<Boolean>> onBusy = Optional.empty();
-
+	private final String currentVersion;
 	private boolean checkOnly;
 	
-	protected AbstractUpdateService(UpdateableAppContext context) {
+	protected AbstractUpdateService(UpdateableAppContext context, String currentVersion) {
 		this.context = context;
+		this.currentVersion = currentVersion;
+	}
+
+	public final String getCurrentVersion() {
+		return currentVersion;
 	}
 
 	@Override
@@ -76,8 +81,8 @@ public abstract class AbstractUpdateService implements UpdateService {
 	@Override
 	public final Phase[] getPhases() {
 		return Arrays.asList(Phase.values()).stream()
-				.filter(p -> p != Phase.CONTINUOUS || (p == Phase.CONTINUOUS
-						&& ( ArtifactVersion.isDeveloperWorkspace() || Boolean.getBoolean("jaul.continuous") || Boolean.getBoolean("jadaptive.development"))))
+				.filter(p -> p != Phase.CONTINUOUS || p == Phase.getDefaultPhaseForVersion(currentVersion) || (p == Phase.CONTINUOUS
+						&& (  ArtifactVersion.isDeveloperWorkspace() || Boolean.getBoolean("jaul.continuous") || Boolean.getBoolean("jadaptive.development"))))
 				.collect(Collectors.toList()).toArray(new Phase[0]);
 	}
 

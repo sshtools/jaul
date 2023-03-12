@@ -9,8 +9,8 @@ public class DummyUpdateService extends AbstractUpdateService {
 
 	private final DummyUpdaterBuilder builder;
 
-	public DummyUpdateService(UpdateableAppContext context, DummyUpdaterBuilder builder) {
-		super(context);
+	public DummyUpdateService(UpdateableAppContext context, DummyUpdaterBuilder builder, String currentVersion) {
+		super(context, currentVersion);
 		this.builder = builder;
 	}
 

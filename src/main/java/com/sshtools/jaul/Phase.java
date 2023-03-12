@@ -8,7 +8,7 @@ public enum Phase {
 			return Phase.STABLE;
 		else {
 			var appVersion = versions[0];
-			return appVersion.startsWith("0.") || appVersion.contains("SNAPSHOT") ? Phase.CONTINUOUS : Phase.STABLE;
+			return appVersion.startsWith("0.") || appVersion.equals("DEV_VERSION") || appVersion.contains("SNAPSHOT") ? Phase.CONTINUOUS : Phase.STABLE;
 		}
 	}
 }
