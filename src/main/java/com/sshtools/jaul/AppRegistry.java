@@ -41,7 +41,7 @@ public class AppRegistry {
 			id = node.get("id", "unknown");
 			if (id.equals(""))
 				throw new IllegalArgumentException("Invalid app data, missing ID.");
-			this.appPreferences = preferencesRoot.node(id);
+			this.appPreferences = preferencesRoot.node(id.replace('.', '/'));
 			var dirPath = node.get("dir", "");
 			if (dirPath.equals(""))
 				throw new IllegalArgumentException("Invalid app data, missing directory.");
