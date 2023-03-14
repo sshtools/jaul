@@ -110,10 +110,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 	public final void rescheduleCheck() {
 		cancelTask();
 		deferUntil = context.getUpdatesDeferredUntil();
-//		if (deferUntil > 0) {
-			rescheduleCheck(TimeUnit.SECONDS.toMillis(12));
-//		} else
-//			deferUntil = 0;
+		rescheduleCheck(TimeUnit.SECONDS.toMillis(6));
 	}
 	
 	@Override
