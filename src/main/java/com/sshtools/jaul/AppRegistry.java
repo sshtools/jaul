@@ -186,15 +186,21 @@ public class AppRegistry {
 	}
 
 	public void deregister(Class<?> clazz) {
+		var jaulApp = clazz.getAnnotation(JaulApp.class);
+		if (jaulApp == null)
+			throw new IllegalArgumentException(
+					MessageFormat.format("A registrable app must use the {0} annotation on the class {1}",
+							JaulApp.class.getName(), clazz.getName()));
+		
 		if (Util.isAdminGroup()) {
 			log.info("De-registering as system wide application.");
 			systemPreferences.ifPresent(p -> {
-				deregister(clazz, p);
+				deregister(jaulApp, p);
 			});
 		} else {
 			log.info("De-registering as user application.");
 			userPreferences.ifPresent(p -> {
-				deregister(clazz, p);
+				deregister(jaulApp, p);
 			});
 		}
 	}
@@ -307,8 +313,8 @@ public class AppRegistry {
 		return appDir;
 	}
 
-	private void deregister(Class<?> clazz, Preferences p) {
-		var appNode = p.node(clazz.getName());
+	private void deregister(JaulApp app, Preferences p) {
+		var appNode = p.node(app.id());
 		try {
 			appNode.removeNode();
 		} catch (BackingStoreException e) {
