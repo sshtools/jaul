@@ -114,7 +114,7 @@ public class AppRegistry {
 
 	AppRegistry() {
 //		try {
-		var prefs = Preferences.systemNodeForPackage(AppRegistry.class);
+		var prefs = Preferences.systemNodeForPackage(AppRegistry.class).node("registry");
 //			prefs.putBoolean("marker", true);
 //			prefs.flush();
 		prefs.addNodeChangeListener(new NodeChangeListener() {
@@ -131,7 +131,7 @@ public class AppRegistry {
 //		}
 
 //		try {
-		/* var */ prefs = Preferences.userNodeForPackage(AppRegistry.class);
+		/* var */ prefs = Preferences.userNodeForPackage(AppRegistry.class).node("registry");
 //			prefs.putBoolean("marker", true);
 //			prefs.flush();
 		userPreferences = Optional.of(prefs);
@@ -343,7 +343,7 @@ public class AppRegistry {
 		} else {
 			var jaulApp = appInstance.getClass().getAnnotation(JaulApp.class);
 			if (jaulApp == null) {
-				return Preferences.userNodeForPackage(appInstance.getClass());
+				return Preferences.userNodeForPackage(appInstance.getClass()).node(appInstance.getClass().getSimpleName());
 			} else {
 				return Preferences.userRoot().node(jaulApp.id().replace('.', '/'));
 			}
