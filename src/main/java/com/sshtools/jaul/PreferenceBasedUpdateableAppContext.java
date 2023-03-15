@@ -9,11 +9,13 @@ public class PreferenceBasedUpdateableAppContext implements UpdateableAppContext
 	private final Preferences preferences;
 	private final String version;
 	private final Optional<Phase> defaultPhase;
+	private final Optional<ScheduledExecutorService> scheduler;
 
-	public PreferenceBasedUpdateableAppContext(Preferences preferences, Optional<Phase> defaultPhase, String version) {
+	public PreferenceBasedUpdateableAppContext(Preferences preferences, Optional<Phase> defaultPhase, String version, Optional<ScheduledExecutorService> scheduler) {
 		this.preferences = preferences;
 		this.defaultPhase = defaultPhase;
 		this.version = version;
+		this.scheduler = scheduler;
 	}
 
 	public final Preferences getPreferences() {
@@ -22,7 +24,7 @@ public class PreferenceBasedUpdateableAppContext implements UpdateableAppContext
 
 	@Override
 	public ScheduledExecutorService getScheduler() {
-		throw new UnsupportedOperationException();
+		return scheduler.orElseThrow(() -> new UnsupportedOperationException("No scheduler, updates cannot be deferred."));
 	}
 
 	@Override

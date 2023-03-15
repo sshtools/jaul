@@ -5,9 +5,26 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.install4j.api.launcher.ApplicationLauncher;
+import com.sshtools.jaul.AppRegistry.App;
 import com.sshtools.jaul.Install4JUpdater.Install4JUpdaterBuilder;
 
 public class Install4JUpdateService extends AbstractUpdateService {
+	
+	public static Install4JUpdateService defaultInstall4JUpdateService(UpdateableAppContext context, String version, App app) {
+
+		/* Force loading of I4J so if it doesn't exist we know earlier */
+		ApplicationLauncher.isNewArchiveInstallation();
+
+		return new Install4JUpdateService(context, 
+				Install4JUpdaterBuilder.builder().
+				withCurrentVersion(version).
+				withLauncherId(app.getLauncherId()).
+				withUpdateUrl(app.getUpdatesUrl().get().replace("${phase}", context.getPhase().name().toLowerCase())).
+				onExit((e) -> System.exit(e)),
+				version);
+
+	}
 
 	static Logger log = LoggerFactory.getLogger(Install4JUpdateService.class);
 	

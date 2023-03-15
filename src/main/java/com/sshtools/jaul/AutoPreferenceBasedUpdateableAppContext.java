@@ -6,19 +6,12 @@ import java.util.prefs.Preferences;
 
 public class AutoPreferenceBasedUpdateableAppContext extends PreferenceBasedUpdateableAppContext {
 
-	private ScheduledExecutorService scheduler;
 	private boolean automaticUpdatesDefault;
 
 	public AutoPreferenceBasedUpdateableAppContext(Preferences preferences, Optional<Phase> defaultPhase,
 			String version, ScheduledExecutorService scheduler, boolean automaticUpdatesDefault) {
-		super(preferences, defaultPhase, version);
-		this.scheduler = scheduler;
+		super(preferences, defaultPhase, version, Optional.ofNullable(scheduler));
 		this.automaticUpdatesDefault = automaticUpdatesDefault;
-	}
-
-	@Override
-	public ScheduledExecutorService getScheduler() {
-		return scheduler;
 	}
 
 	@Override
