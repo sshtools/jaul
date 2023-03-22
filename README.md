@@ -59,47 +59,6 @@ Now you'll need to add some plugins. First off, copy and paste the following int
 <plugin>
 	<groupId>org.codehaus.mojo</groupId>
 	<artifactId>build-helper-maven-plugin</artifactId>
-	<executions>
-		<!-- The build number. This will be set to ZERO if BUILD_NUMBER is not 
-			set. Jenkins will set BUILD_NUMBER, or you can set it in the environment 
-			before running maven for build testing. -->
-		<execution>
-			<id>build-number-property</id>
-			<goals>
-				<goal>regex-property</goal>
-			</goals>
-			<phase>initialize</phase>
-			<configuration>
-				<!-- Set build.number to zero if it is blank. This uses a bit of regular 
-					expression trickery. Because Jenkins supplies BUILD_NUMBER as an environment 
-					variable, and we also want the build to work outside of Jenkins, then the 
-					below is used to set build.number to zero if BUILD_NUMBER is not set. There 
-					is no easy way to do this with basic Maven, and build-helper doesn't like 
-					empty variables either, so we prefix it with zero, then use capture groups 
-					to correct the format for both situations -->
-				<name>product.version</name>
-				<value>${project.version}</value>
-				<regex>^([0-9]+)\.([0-9]+)\.([0-9]+)-([0-9A-Za-z]+)$</regex>
-				<replacement>$1.$2.$3</replacement>
-				<failIfNoMatch>false</failIfNoMatch>
-			</configuration>
-		</execution>
-		<execution>
-			<id>product-version-property</id>
-			<goals>
-				<goal>regex-property</goal>
-			</goals>
-			<phase>initialize</phase>
-			<configuration>
-				<!-- Strip off -SNAPSHOT (or other suffix) -->
-				<name>build.number</name>
-				<value>0${env.BUILD_NUMBER}</value>
-				<regex>^(?:0?)([0-9]+)(?:\$\{env\.BUILD_NUMBER\})?$</regex>
-				<replacement>$1</replacement>
-				<failIfNoMatch>false</failIfNoMatch>
-			</configuration>
-		</execution>
-	</executions>
 </plugin>
 ```
 
@@ -125,7 +84,7 @@ And then the following into `<build>` / `<pluginManagement>` / `<plugins>`.
 				<configuration>
 					<quiet>true</quiet>
 					<files>
-						<file>${build.projectProperties}s</file>
+						<file>${build.projectProperties}</file>
 						<file>${build.userProperties}</file>
 					</files>
 				</configuration>
@@ -136,6 +95,47 @@ And then the following into `<build>` / `<pluginManagement>` / `<plugins>`.
 		<groupId>org.codehaus.mojo</groupId>
 		<artifactId>build-helper-maven-plugin</artifactId>
 		<version>3.3.0</version>
+		<executions>
+			<!-- The build number. This will be set to ZERO if BUILD_NUMBER is not 
+				set. Jenkins will set BUILD_NUMBER, or you can set it in the environment 
+				before running maven for build testing. -->
+			<execution>
+				<id>build-number-property</id>
+				<goals>
+					<goal>regex-property</goal>
+				</goals>
+				<phase>initialize</phase>
+				<configuration>
+					<!-- Set build.number to zero if it is blank. This uses a bit of regular 
+						expression trickery. Because Jenkins supplies BUILD_NUMBER as an environment 
+						variable, and we also want the build to work outside of Jenkins, then the 
+						below is used to set build.number to zero if BUILD_NUMBER is not set. There 
+						is no easy way to do this with basic Maven, and build-helper doesn't like 
+						empty variables either, so we prefix it with zero, then use capture groups 
+						to correct the format for both situations -->
+					<name>product.version</name>
+					<value>${project.version}</value>
+					<regex>^([0-9]+)\.([0-9]+)\.([0-9]+)-([0-9A-Za-z]+)$</regex>
+					<replacement>$1.$2.$3</replacement>
+					<failIfNoMatch>false</failIfNoMatch>
+				</configuration>
+			</execution>
+			<execution>
+				<id>product-version-property</id>
+				<goals>
+					<goal>regex-property</goal>
+				</goals>
+				<phase>initialize</phase>
+				<configuration>
+					<!-- Strip off -SNAPSHOT (or other suffix) -->
+					<name>build.number</name>
+					<value>0${env.BUILD_NUMBER}</value>
+					<regex>^(?:0?)([0-9]+)(?:\$\{env\.BUILD_NUMBER\})?$</regex>
+					<replacement>$1</replacement>
+					<failIfNoMatch>false</failIfNoMatch>
+				</configuration>
+			</execution>
+		</executions>
 	</plugin>
 	<plugin>
 		<groupId>com.install4j</groupId>
@@ -171,6 +171,10 @@ You'll also need some `<repositories/>` and `<pluginRepositories>`.
 	<pluginRepository>
 		<id>ej-technologies</id>
 		<url>https://maven.ej-technologies.com/repository</url>
+		<releases />
+		<snapshots>
+			<enabled>false</enabled>
+		</snapshots>
 	</pluginRepository>
 </pluginRepositories>
 ```
@@ -188,10 +192,6 @@ Now add a new `<profile>` that is activated by the `buildInstaller` system prope
 	</activation>
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
-			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-antrun-plugin</artifactId>
