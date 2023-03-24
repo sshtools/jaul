@@ -260,22 +260,14 @@ public class AppRegistry {
 
 		if (Files.exists(appFile)) {
 			if (Util.hasFullAdminRights()) {
-//				if (systemPreferences.isPresent()) {
 				log.info("Registering as system wide application.");
 				return new App(Scope.SYSTEM,
 						saveToPreferences(jaulApp, clazz, appDir, appFile, systemPreferences.get()),
 						Preferences.systemRoot());
-//				}
-//				else
-//					throw new IllegalArgumentException("Cannot register app as SYSTEM because no system preferences are present.");
 			} else {
-//				if (userPreferences.isPresent()) {
 				log.info("Registering as user application.");
 				return new App(Scope.USER, saveToPreferences(jaulApp, clazz, appDir, appFile, userPreferences.get()),
 						Preferences.userRoot());
-//				}
-//				else
-//					throw new IllegalArgumentException("Cannot register app as USER because no user preferences are present.");
 			}
 		} else {
 			throw new IllegalArgumentException("Cannot register app, as system property 'install4j.installationDir' is "
