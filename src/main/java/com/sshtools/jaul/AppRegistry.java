@@ -182,7 +182,7 @@ public class AppRegistry {
 					MessageFormat.format("A registrable app must use the {0} annotation on the class {1}",
 							JaulApp.class.getName(), clazz.getName()));
 
-		if (Util.isAdminGroup()) {
+		if (!Boolean.getBoolean("jaul.forceUserDeregistration") && Util.isAdminGroup()) {
 			log.info("De-registering as system wide application.");
 			deregister(jaulApp, getSystemPreferences());
 		} else {
@@ -230,7 +230,7 @@ public class AppRegistry {
 							JaulApp.class.getName(), clazz.getName()));
 
 		if (Files.exists(appFile)) {
-			if (Util.hasFullAdminRights()) {
+			if (!Boolean.getBoolean("jaul.forceUserRegistration") && Util.hasFullAdminRights()) {
 				log.info("Registering as system wide application.");
 				return new App(Scope.SYSTEM,
 						saveToPreferences(jaulApp, clazz, appDir, appFile, getSystemPreferences()));
