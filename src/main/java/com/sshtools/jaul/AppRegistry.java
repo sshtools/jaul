@@ -256,8 +256,12 @@ public class AppRegistry {
 		if (Files.exists(app.dir.resolve(".install4j").resolve("i4jparams.conf"))) {
 			return app;
 		} else {
-			node.removeNode();
-			throw new IOException(app.getId() + " has been uninstalled.");
+			try {
+				node.removeNode();
+			}
+			catch(Exception e) {
+			}
+			throw new IOException(app.getId() + " has been uninstalled from " + app.dir);
 		}
 	}
 
