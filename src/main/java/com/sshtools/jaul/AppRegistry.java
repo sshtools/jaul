@@ -11,8 +11,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.prefs.BackingStoreException;
-import java.util.prefs.NodeChangeEvent;
-import java.util.prefs.NodeChangeListener;
 import java.util.prefs.Preferences;
 
 import org.slf4j.Logger;
@@ -22,7 +20,7 @@ import com.install4j.api.Util;
 import com.install4j.api.update.ApplicationDisplayMode;
 
 public class AppRegistry {
-	
+
 	public final static String KEY_PHASE = "phase";
 	public final static String KEY_AUTOMATIC_UPDATES = "automaticUpdates";
 	public final static String KEY_DEFER = "updatesDeferredUntil";
@@ -96,8 +94,8 @@ public class AppRegistry {
 
 	private static AppRegistry instance;
 
-	private Optional<Preferences> systemPreferences = Optional.empty();
-	private Optional<Preferences> userPreferences = Optional.empty();
+//	private Optional<Preferences> systemPreferences = Optional.empty();
+//	private Optional<Preferences> userPreferences = Optional.empty();
 
 	public static AppRegistry get() {
 		if (instance == null) {
@@ -115,65 +113,65 @@ public class AppRegistry {
 	}
 
 	AppRegistry() {
-		var prefs = Preferences.systemNodeForPackage(AppRegistry.class).node("registry");
-		prefs.addNodeChangeListener(new NodeChangeListener() {
-			@Override
-			public void childRemoved(NodeChangeEvent evt) {
-			}
+	}
 
-			@Override
-			public void childAdded(NodeChangeEvent evt) {
-			}
-		});
-		systemPreferences = Optional.of(prefs);
+	public Preferences getSystemPreferences() {
+		return Preferences.systemNodeForPackage(AppRegistry.class).node("registry");
+	}
 
-		prefs = Preferences.userNodeForPackage(AppRegistry.class).node("registry");
-		userPreferences = Optional.of(prefs);
+	public Preferences getUserPreferences() {
+		return Preferences.userNodeForPackage(AppRegistry.class).node("registry");
 	}
 
 	public List<App> getApps() {
 		var l = new ArrayList<App>();
 		log.info("Retrieving user applications.");
-		userPreferences.ifPresent(p -> {
-			try {
-				for (String k : p.childrenNames()) {
-					try {
-						var node = p.node(k);
-						log.info("    {}", k);
-						l.add(checkApp(new App(Scope.USER, node), node));
-					} catch (Exception e) {
-						if (log.isDebugEnabled())
-							log.error(MessageFormat.format("Failed to add app {0}.", k), e);
-						else
-							log.error(MessageFormat.format("Failed to add app {0}. {1}", k, e.getMessage()));
-					}
+		var p = getUserPreferences();
+		try {
+			p.sync();
+		} catch (BackingStoreException e) {
+		}
+		try {
+			for (String k : p.childrenNames()) {
+				try {
+					var node = p.node(k);
+					log.info("    {}", k);
+					l.add(checkApp(new App(Scope.USER, node), node));
+				} catch (Exception e) {
+					if (log.isDebugEnabled())
+						log.error(MessageFormat.format("Failed to add app {0}.", k), e);
+					else
+						log.error(MessageFormat.format("Failed to add app {0}. {1}", k, e.getMessage()));
 				}
-			} catch (BackingStoreException e) {
-				log.error("Failed to list system apps.", e);
 			}
-		});
-		systemPreferences.ifPresent(p -> {
-			log.info("Retrieving system applications.");
-			try {
-				for (String k : p.childrenNames()) {
-					try {
-						var node = p.node(k);
-						log.info("    {}", k);
-						if (contains(k, l)) {
-							log.warn("Already installed as user app, that will take precedence.");
-						} else
-							l.add(checkApp(new App(Scope.SYSTEM, node), node));
-					} catch (Exception e) {
-						if (log.isDebugEnabled())
-							log.error(MessageFormat.format("Failed to add app {0}.", k), e);
-						else
-							log.error(MessageFormat.format("Failed to add app {0}. {1}", k, e.getMessage()));
-					}
+		} catch (BackingStoreException e) {
+			log.error("Failed to list system apps.", e);
+		}
+		var s = getSystemPreferences();
+		try {
+			s.sync();
+		} catch (BackingStoreException e) {
+		}
+		log.info("Retrieving system applications.");
+		try {
+			for (String k : s.childrenNames()) {
+				try {
+					var node = s.node(k);
+					log.info("    {}", k);
+					if (contains(k, l)) {
+						log.warn("Already installed as user app, that will take precedence.");
+					} else
+						l.add(checkApp(new App(Scope.SYSTEM, node), node));
+				} catch (Exception e) {
+					if (log.isDebugEnabled())
+						log.error(MessageFormat.format("Failed to add app {0}.", k), e);
+					else
+						log.error(MessageFormat.format("Failed to add app {0}. {1}", k, e.getMessage()));
 				}
-			} catch (BackingStoreException e) {
-				log.error("Failed to list system apps.", e);
 			}
-		});
+		} catch (BackingStoreException e) {
+			log.error("Failed to list system apps.", e);
+		}
 		return l;
 	}
 
@@ -183,23 +181,17 @@ public class AppRegistry {
 			throw new IllegalArgumentException(
 					MessageFormat.format("A registrable app must use the {0} annotation on the class {1}",
 							JaulApp.class.getName(), clazz.getName()));
-		
+
 		if (Util.isAdminGroup()) {
 			log.info("De-registering as system wide application.");
-			systemPreferences.ifPresent(p -> {
-				deregister(jaulApp, p);
-			});
+			deregister(jaulApp, getSystemPreferences());
 		} else {
 			log.info("De-registering as user application.");
-			userPreferences.ifPresent(p -> {
-				deregister(jaulApp, p);
-			});
+			deregister(jaulApp, getUserPreferences());
 		}
 	}
 
 	public App get(Class<?> clazz) {
-//		var appDir = resolveAppDir();
-//		var appFile = appDir.resolve(".install4j").resolve("i4jparams.conf");
 		var jaulApp = clazz.getAnnotation(JaulApp.class);
 		if (jaulApp == null)
 			throw new IllegalArgumentException(
@@ -210,28 +202,21 @@ public class AppRegistry {
 
 		try {
 			if (Util.isAdminGroup()) {
-				if (systemPreferences.isPresent()) {
-					log.info("Retrieving as system application.");
-					var sysRoot = systemPreferences.get();
-					if (Arrays.asList(sysRoot.childrenNames()).contains(id)) {
-						return new App(Scope.SYSTEM, sysRoot.node(id));
-					}
-				} else
-					throw new IllegalArgumentException(
-							"Cannot get app as SYSTEM because no system preferences are present.");
+				log.info("Retrieving as system application.");
+				var sysRoot = getSystemPreferences();
+				if (Arrays.asList(sysRoot.childrenNames()).contains(id)) {
+					return new App(Scope.SYSTEM, sysRoot.node(id));
+				}
 			} else {
-				if (userPreferences.isPresent()) {
-					log.info("Retrieving as user application.");
-					var userRoot = userPreferences.get();
-					if (Arrays.asList(userRoot.childrenNames()).contains(id)) {
-						return new App(Scope.USER, userRoot.node(id));
-					}
-				} else
-					throw new IllegalArgumentException(
-							"Cannot get app as USER because no user preferences are present.");
+				log.info("Retrieving as user application.");
+				var userRoot = getUserPreferences();
+				if (Arrays.asList(userRoot.childrenNames()).contains(id)) {
+					return new App(Scope.USER, userRoot.node(id));
+				}
 			}
-			throw new IllegalArgumentException("Cannot get app, as it has not been registered. This is usually done at installation time using '--jaul-register'. Either this did not happen,  "
-					+ "or you are running in a development environment. You can fake an installation by linking '.install4j' directory from a real installation, then running this app with '--jaul-register'.");
+			throw new IllegalArgumentException(
+					"Cannot get app, as it has not been registered. This is usually done at installation time using '--jaul-register'. Either this did not happen,  "
+							+ "or you are running in a development environment. You can fake an installation by linking '.install4j' directory from a real installation, then running this app with '--jaul-register'.");
 		} catch (BackingStoreException bse) {
 			throw new IllegalStateException("Failed to query preferences api for application registry details.", bse);
 		}
@@ -251,10 +236,10 @@ public class AppRegistry {
 			if (Util.hasFullAdminRights()) {
 				log.info("Registering as system wide application.");
 				return new App(Scope.SYSTEM,
-						saveToPreferences(jaulApp, clazz, appDir, appFile, systemPreferences.get()));
+						saveToPreferences(jaulApp, clazz, appDir, appFile, getSystemPreferences()));
 			} else {
 				log.info("Registering as user application.");
-				return new App(Scope.USER, saveToPreferences(jaulApp, clazz, appDir, appFile, userPreferences.get()));
+				return new App(Scope.USER, saveToPreferences(jaulApp, clazz, appDir, appFile, getUserPreferences()));
 			}
 		} else {
 			throw new IllegalArgumentException("Cannot register app, as system property 'install4j.installationDir' is "
@@ -316,6 +301,7 @@ public class AppRegistry {
 			appNode.put("category", app.category().name());
 			appNode.put("id", app.id());
 			appNode.put("appDir", appDir.toAbsolutePath().toString());
+			appNode.flush();
 		} catch (Exception ioe) {
 			log.warn("Cannot register app.", ioe);
 		}
@@ -328,7 +314,8 @@ public class AppRegistry {
 		} else {
 			var jaulApp = appInstance.getClass().getAnnotation(JaulApp.class);
 			if (jaulApp == null) {
-				return Preferences.userNodeForPackage(appInstance.getClass()).node(appInstance.getClass().getSimpleName());
+				return Preferences.userNodeForPackage(appInstance.getClass())
+						.node(appInstance.getClass().getSimpleName());
 			} else {
 				return Preferences.userRoot().node(jaulApp.id().replace('.', '/'));
 			}
