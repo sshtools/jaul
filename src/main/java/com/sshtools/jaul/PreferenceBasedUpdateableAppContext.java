@@ -39,23 +39,23 @@ public class PreferenceBasedUpdateableAppContext implements UpdateableAppContext
 
 	@Override
 	public void setUpdatesDeferredUntil(long timeMs) {
-		getPreferences().putLong("updatesDeferredUntil", timeMs);
+		getPreferences().putLong(AppRegistry.KEY_DEFER, timeMs);
 	}
 
 	@Override
 	public long getUpdatesDeferredUntil() {
-		return getPreferences().getLong("updatesDeferredUntil", 0);
+		return getPreferences().getLong(AppRegistry.KEY_DEFER, 0);
 	}
 
 	@Override
 	public Phase getPhase() {
-		return Phase.valueOf(getPreferences().get("phase",
+		return Phase.valueOf(getPreferences().get(AppRegistry.KEY_PHASE,
 				defaultPhase.orElse(Phase.getDefaultPhaseForVersion(version)).name()));
 	}
 
 	@Override
 	public void setPhase(Phase phase) {
-		getPreferences().put("phase", phase.name());
+		getPreferences().put(AppRegistry.KEY_PHASE, phase.name());
 
 	}
 }

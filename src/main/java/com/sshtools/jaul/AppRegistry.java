@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.NodeChangeEvent;
 import java.util.prefs.NodeChangeListener;
@@ -23,6 +22,10 @@ import com.install4j.api.Util;
 import com.install4j.api.update.ApplicationDisplayMode;
 
 public class AppRegistry {
+	
+	public final static String KEY_PHASE = "phase";
+	public final static String KEY_AUTOMATIC_UPDATES = "automaticUpdates";
+	public final static String KEY_DEFER = "updatesDeferredUntil";
 
 	public enum Scope {
 		USER, SYSTEM
@@ -37,12 +40,12 @@ public class AppRegistry {
 		private final AppCategory category;
 		private final Preferences appPreferences;
 
-		private App(Scope scope, Preferences node, Preferences preferencesRoot) {
+		private App(Scope scope, Preferences node) {
 			this.scope = scope;
 			id = node.get("id", "unknown");
 			if (id.equals(""))
 				throw new IllegalArgumentException("Invalid app data, missing ID.");
-			this.appPreferences = preferencesRoot.node(id.replace('.', '/'));
+			this.appPreferences = Preferences.userRoot().node(id.replace('.', '/'));
 			var dirPath = node.get("appDir", "");
 			if (dirPath.equals(""))
 				throw new IllegalArgumentException("Invalid app data, missing directory.");
@@ -60,7 +63,7 @@ public class AppRegistry {
 		}
 
 		public final Phase getPhase() {
-			return Phase.valueOf(getAppPreferences().get("phase", Phase.STABLE.name()));
+			return Phase.valueOf(getAppPreferences().get(KEY_PHASE, Phase.STABLE.name()));
 		}
 
 		public final AppCategory getCategory() {
@@ -95,7 +98,6 @@ public class AppRegistry {
 
 	private Optional<Preferences> systemPreferences = Optional.empty();
 	private Optional<Preferences> userPreferences = Optional.empty();
-	private List<Consumer<App>> listeners = new ArrayList<>();
 
 	public static AppRegistry get() {
 		if (instance == null) {
@@ -113,10 +115,7 @@ public class AppRegistry {
 	}
 
 	AppRegistry() {
-//		try {
 		var prefs = Preferences.systemNodeForPackage(AppRegistry.class).node("registry");
-//			prefs.putBoolean("marker", true);
-//			prefs.flush();
 		prefs.addNodeChangeListener(new NodeChangeListener() {
 			@Override
 			public void childRemoved(NodeChangeEvent evt) {
@@ -127,16 +126,9 @@ public class AppRegistry {
 			}
 		});
 		systemPreferences = Optional.of(prefs);
-//		} catch (Exception e) {
-//		}
 
-//		try {
-		/* var */ prefs = Preferences.userNodeForPackage(AppRegistry.class).node("registry");
-//			prefs.putBoolean("marker", true);
-//			prefs.flush();
+		prefs = Preferences.userNodeForPackage(AppRegistry.class).node("registry");
 		userPreferences = Optional.of(prefs);
-//		} catch (Exception e) {
-//		}
 	}
 
 	public List<App> getApps() {
@@ -148,7 +140,7 @@ public class AppRegistry {
 					try {
 						var node = p.node(k);
 						log.info("    {}", k);
-						l.add(checkApp(new App(Scope.USER, node, Preferences.userRoot()), node));
+						l.add(checkApp(new App(Scope.USER, node), node));
 					} catch (Exception e) {
 						if (log.isDebugEnabled())
 							log.error(MessageFormat.format("Failed to add app {0}.", k), e);
@@ -170,7 +162,7 @@ public class AppRegistry {
 						if (contains(k, l)) {
 							log.warn("Already installed as user app, that will take precedence.");
 						} else
-							l.add(checkApp(new App(Scope.SYSTEM, node, Preferences.systemRoot()), node));
+							l.add(checkApp(new App(Scope.SYSTEM, node), node));
 					} catch (Exception e) {
 						if (log.isDebugEnabled())
 							log.error(MessageFormat.format("Failed to add app {0}.", k), e);
@@ -206,8 +198,8 @@ public class AppRegistry {
 	}
 
 	public App get(Class<?> clazz) {
-		var appDir = resolveAppDir();
-		var appFile = appDir.resolve(".install4j").resolve("i4jparams.conf");
+//		var appDir = resolveAppDir();
+//		var appFile = appDir.resolve(".install4j").resolve("i4jparams.conf");
 		var jaulApp = clazz.getAnnotation(JaulApp.class);
 		if (jaulApp == null)
 			throw new IllegalArgumentException(
@@ -217,32 +209,29 @@ public class AppRegistry {
 		var id = jaulApp.id();
 
 		try {
-			if (Files.exists(appFile)) {
-				if (Util.isAdminGroup()) {
-					if (systemPreferences.isPresent()) {
-						log.info("Retrieving as system application.");
-						var sysRoot = systemPreferences.get();
-						if (Arrays.asList(sysRoot.childrenNames()).contains(id)) {
-							return new App(Scope.SYSTEM, sysRoot.node(id), Preferences.systemRoot());
-						}
-					} else
-						throw new IllegalArgumentException(
-								"Cannot get app as SYSTEM because no system preferences are present.");
-				} else {
-					if (userPreferences.isPresent()) {
-						log.info("Retrieving as user application.");
-						var userRoot = userPreferences.get();
-						if (Arrays.asList(userRoot.childrenNames()).contains(id)) {
-							return new App(Scope.USER, userRoot.node(id), Preferences.userRoot());
-						}
-					} else
-						throw new IllegalArgumentException(
-								"Cannot get app as USER because no user preferences are present.");
-				}
+			if (Util.isAdminGroup()) {
+				if (systemPreferences.isPresent()) {
+					log.info("Retrieving as system application.");
+					var sysRoot = systemPreferences.get();
+					if (Arrays.asList(sysRoot.childrenNames()).contains(id)) {
+						return new App(Scope.SYSTEM, sysRoot.node(id));
+					}
+				} else
+					throw new IllegalArgumentException(
+							"Cannot get app as SYSTEM because no system preferences are present.");
+			} else {
+				if (userPreferences.isPresent()) {
+					log.info("Retrieving as user application.");
+					var userRoot = userPreferences.get();
+					if (Arrays.asList(userRoot.childrenNames()).contains(id)) {
+						return new App(Scope.USER, userRoot.node(id));
+					}
+				} else
+					throw new IllegalArgumentException(
+							"Cannot get app as USER because no user preferences are present.");
 			}
-			throw new IllegalArgumentException("Cannot get app, as system property 'install4j.installationDir' is "
-					+ "not set, and the current working directory does not appear to be an "
-					+ "installed application either. Either ensure the system property is set (usually as a VM parameter in the launcher in the Install4j project), or ensure the application runs from its installed directory (not usually ideal for command line apps).");
+			throw new IllegalArgumentException("Cannot get app, as it has not been registered. This is usually done at installation time using '--jaul-register'. Either this did not happen,  "
+					+ "or you are running in a development environment. You can fake an installation by linking '.install4j' directory from a real installation, then running this app with '--jaul-register'.");
 		} catch (BackingStoreException bse) {
 			throw new IllegalStateException("Failed to query preferences api for application registry details.", bse);
 		}
@@ -262,12 +251,10 @@ public class AppRegistry {
 			if (Util.hasFullAdminRights()) {
 				log.info("Registering as system wide application.");
 				return new App(Scope.SYSTEM,
-						saveToPreferences(jaulApp, clazz, appDir, appFile, systemPreferences.get()),
-						Preferences.systemRoot());
+						saveToPreferences(jaulApp, clazz, appDir, appFile, systemPreferences.get()));
 			} else {
 				log.info("Registering as user application.");
-				return new App(Scope.USER, saveToPreferences(jaulApp, clazz, appDir, appFile, userPreferences.get()),
-						Preferences.userRoot());
+				return new App(Scope.USER, saveToPreferences(jaulApp, clazz, appDir, appFile, userPreferences.get()));
 			}
 		} else {
 			throw new IllegalArgumentException("Cannot register app, as system property 'install4j.installationDir' is "
