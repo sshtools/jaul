@@ -201,18 +201,15 @@ public class AppRegistry {
 		var id = jaulApp.id();
 
 		try {
-			if (Util.isAdminGroup()) {
-				log.info("Retrieving as system application.");
-				var sysRoot = getSystemPreferences();
-				if (Arrays.asList(sysRoot.childrenNames()).contains(id)) {
-					return new App(Scope.SYSTEM, sysRoot.node(id));
-				}
-			} else {
-				log.info("Retrieving as user application.");
-				var userRoot = getUserPreferences();
-				if (Arrays.asList(userRoot.childrenNames()).contains(id)) {
-					return new App(Scope.USER, userRoot.node(id));
-				}
+			log.info("Retrieving as user application.");
+			var userRoot = getUserPreferences();
+			if (Arrays.asList(userRoot.childrenNames()).contains(id)) {
+				return new App(Scope.USER, userRoot.node(id));
+			}
+			log.info("Retrieving as system application.");
+			var sysRoot = getSystemPreferences();
+			if (Arrays.asList(sysRoot.childrenNames()).contains(id)) {
+				return new App(Scope.SYSTEM, sysRoot.node(id));
 			}
 			throw new IllegalArgumentException(
 					"Cannot get app, as it has not been registered. This is usually done at installation time using '--jaul-register'. Either this did not happen,  "
