@@ -179,7 +179,7 @@ public class AppRegistry {
 				log.error("Failed to list system apps.", e);
 			}
 		}
-		if((Util.hasFullAdminRights() && scope.isEmpty()) || scope.get().equals(Scope.SYSTEM)) {
+		if((Util.hasFullAdminRights() && scope.isEmpty()) || (!scope.isEmpty() && scope.get().equals(Scope.SYSTEM))) {
 			var s = getSystemPreferences();
 			try {
 				s.sync();
