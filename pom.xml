@@ -6,8 +6,8 @@
 	<name>Jadaptive Application Update Library</name>
 	<description>A library used across several JAdpative applications, it provides some common features based on Install4J Runtime. </description>
 	<properties>
-		<maven.compiler.target>17</maven.compiler.target>
-		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
+		<maven.compiler.source>11</maven.compiler.source>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
@@ -114,7 +114,7 @@
 					<configuration>
 						<encoding>UTF-8</encoding>
 						<detectJavaApiLink>false</detectJavaApiLink>
-						<source>17</source>
+						<source>11</source>
 						<doclint>none</doclint>
 						<sourcepath>src/main/java</sourcepath>
 						<includeDependencySources>false</includeDependencySources>
