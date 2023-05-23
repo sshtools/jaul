@@ -238,13 +238,23 @@ public class AppRegistry {
 	}
 
 	public App get(Class<?> clazz) {
+		String id;
 		var jaulApp = clazz.getAnnotation(JaulApp.class);
-		if (jaulApp == null)
-			throw new IllegalArgumentException(
-					MessageFormat.format("A registrable app must use the {0} annotation on the class {1}",
-							JaulApp.class.getName(), clazz.getName()));
-
-		var id = jaulApp.id();
+		if(jaulApp == null) {
+			var jaulAppComponent = clazz.getAnnotation(JaulAppComponent.class);
+			if(jaulAppComponent == null) {
+				throw new IllegalArgumentException(
+						MessageFormat.format("A registrable app must use the {0} annotation or the {1} annotation on the class {2}",
+								JaulApp.class.getName(), JaulAppComponent.class.getName(), clazz.getName()));				
+			}
+			else {
+				id = jaulAppComponent.id();
+			}
+		}
+		else {
+			id = jaulApp.id();
+		}
+		
 
 		try {
 			log.debug("Retrieving as user application.");
