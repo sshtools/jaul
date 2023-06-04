@@ -1,6 +1,6 @@
 # JADAPTIVE Application Update Library
 
-Adds update features to several JAdaptive projects via the Install4J runtime. Install4J itself is optional and only available in the EJ Technologies repository.
+Adds update features to several Jadaptive projects via the Install4J runtime. Install4J itself is optional and only available in the EJ Technologies repository.
 
 ## Add Update Support To An Application
 
@@ -36,7 +36,7 @@ Now you'll need a `<dependency/>`.
 </dependency>
 ```
 
-You'll also *jaul* need itself. If this is a JavaFX application, hopefully you are already using `jajafx`, or if this is a command line tool hopefully you are already using `command-utils`. Either of these handle the bulk of the integration, you just need to provide some details and initiate the update or update check according to your user interface needs.
+You'll also need *jaul* itself. If this is a JavaFX application, hopefully you are already using `jajafx`, or if this is a command line tool hopefully you are already using `command-utils`. Either of these handle the bulk of the integration, you just need to provide some details and initiate the update or update check according to your user interface needs.
 
 So, if you are not already using either of the framework libraries, add another dependency.
 
