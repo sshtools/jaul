@@ -264,6 +264,10 @@ How to do this will depend on the type of application. There are currently 3 maj
  * JavaFX GUI Application
  * Everything else (e.g. SWT application). 
  
+** Note, you will find the property `install4j.runtimeDir` useful. In a development environment (e.g. Eclipse), you can set this
+property on a launcher to test update functionality. It must be the path to a real installation of the app, suffixed by `.install4j`, e.g.
+`/opt/push-sftp/.install4j`. **
+ 
 #### Command Line Application
 
 Assuming you are using the `command-utils` module, you will be provide t

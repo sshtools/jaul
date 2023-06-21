@@ -12,24 +12,36 @@ import com.sshtools.jaul.DummyUpdater.DummyUpdaterBuilder;
 public interface UpdateService {
 
 	public static UpdateService basicUpdateService(Preferences preferences, Optional<App> app, String version) {
-		return createUpdateService(app, version, new PreferenceBasedUpdateableAppContext(preferences, Optional.of(Phase.STABLE), version, Optional.empty()));
+		return createUpdateService(app, version, new PreferenceBasedUpdateableAppContext(preferences, Optional.of(Phase.STABLE), version, Optional.empty()), false);
+	}
+	
+	public static UpdateService basicConsoleUpdateService(Preferences preferences, Optional<App> app, String version) {
+		return createUpdateService(app, version, new PreferenceBasedUpdateableAppContext(preferences, Optional.of(Phase.STABLE), version, Optional.empty()), true);
 	}
 
 	public static UpdateService deferrableUpdateService(Preferences preferences, Optional<Phase> defaultPhase, Optional<App> app, String version, ScheduledExecutorService scheduler) {
-		return createUpdateService(app, version, new PreferenceBasedUpdateableAppContext(preferences, defaultPhase, version, Optional.of(scheduler)));
+		return createUpdateService(app, version, new PreferenceBasedUpdateableAppContext(preferences, defaultPhase, version, Optional.of(scheduler)), false);
+	}
+
+	public static UpdateService deferrableConsoleUpdateService(Preferences preferences, Optional<Phase> defaultPhase, Optional<App> app, String version, ScheduledExecutorService scheduler) {
+		return createUpdateService(app, version, new PreferenceBasedUpdateableAppContext(preferences, defaultPhase, version, Optional.of(scheduler)), true);
 	}
 	
 	public static UpdateService autoUpdateService(Preferences preferences, Optional<Phase> defaultPhase, Optional<App> app, String version, ScheduledExecutorService scheduler) {
-		return createUpdateService(app, version, new AutoPreferenceBasedUpdateableAppContext(preferences, defaultPhase, version, scheduler, true));
+		return createUpdateService(app, version, new AutoPreferenceBasedUpdateableAppContext(preferences, defaultPhase, version, scheduler, true), false);
+	}
+	
+	public static UpdateService autoConsoleUpdateService(Preferences preferences, Optional<Phase> defaultPhase, Optional<App> app, String version, ScheduledExecutorService scheduler) {
+		return createUpdateService(app, version, new AutoPreferenceBasedUpdateableAppContext(preferences, defaultPhase, version, scheduler, true), true);
 	}
 
-	public static UpdateService createUpdateService(Optional<App> app, String version, UpdateableAppContext ctx) {
+	public static UpdateService createUpdateService(Optional<App> app, String version, UpdateableAppContext ctx, boolean consoleMode) {
 		try {
 			if ("true".equals(System.getProperty("jaul.dummyUpdates"))) {
 				return new DummyUpdateService(ctx, DummyUpdaterBuilder.builder(), version);
 			}
 			if(app.isPresent()) {
-				return Install4JUpdateService.defaultInstall4JUpdateService(ctx, version, app.get());
+				return Install4JUpdateService.defaultInstall4JUpdateService(ctx, version, app.get(), consoleMode);
 			}
 			else {
 				return new NoUpdateService(ctx);
