@@ -208,28 +208,41 @@ public class AppRegistry {
 		}
 		return l;
 	}
+	
+	public void deregister(String id) {
 
-	public void deregister(Class<?> clazz) {
 		try {
-			App app = get(clazz);
-			var telem = telemetryForApp(app).build();
-			telem.event(telem.builder().withType(Type.DEREGISTER).withDescription("Application deregistered.").build());
-			telem.sendNow().ifPresent(t -> {
-				try {
-					t.join(Duration.ofSeconds(20).toMillis());
-				} catch (InterruptedException e) {
-				}
-			});
-			if (app.getScope() == Scope.SYSTEM) {
-				log.info("De-registering as system wide application.");
-				deregister(app, getSystemPreferences());
-			} else {
-				log.info("De-registering as user application.");
-				deregister(app, getUserPreferences());
-			}
+			deregister(get(id));
 		}
 		catch(IllegalStateException ise) {
 			log.warn("Could not deregister.", ise);
+		}
+	}
+
+	public void deregister(Class<?> clazz) {
+		try {
+			deregister(get(clazz));
+		}
+		catch(IllegalStateException ise) {
+			log.warn("Could not deregister.", ise);
+		}
+	}
+
+	private void deregister(App app) {
+		var telem = telemetryForApp(app).build();
+		telem.event(telem.builder().withType(Type.DEREGISTER).withDescription("Application deregistered.").build());
+		telem.sendNow().ifPresent(t -> {
+			try {
+				t.join(Duration.ofSeconds(20).toMillis());
+			} catch (InterruptedException e) {
+			}
+		});
+		if (app.getScope() == Scope.SYSTEM) {
+			log.info("De-registering as system wide application.");
+			deregister(app, getSystemPreferences());
+		} else {
+			log.info("De-registering as user application.");
+			deregister(app, getUserPreferences());
 		}
 	}
 
@@ -256,6 +269,10 @@ public class AppRegistry {
 		}
 		
 
+		return get(id);
+	}
+
+	public App get(String id) {
 		try {
 			log.debug("Retrieving as user application.");
 			var userRoot = getUserPreferences();
@@ -287,24 +304,21 @@ public class AppRegistry {
 	}
 
 	public App register(Class<?> clazz) {
+		return register(JaulAppProvider.fromClass(clazz));
+	}
+	
+	public App register(JaulAppProvider jaulApp) {
 		var appDir = resolveAppDir();
 		var appFile = appDir.resolve(".install4j").resolve("i4jparams.conf");
-
-		var jaulApp = clazz.getAnnotation(JaulApp.class);
-		if (jaulApp == null)
-			throw new IllegalArgumentException(
-					MessageFormat.format("A registrable app must use the {0} annotation on the class {1}",
-							JaulApp.class.getName(), clazz.getName()));
-
 		if (Files.exists(appFile)) {
 			App app;
 			if (!Boolean.getBoolean("jaul.forceUserRegistration") && Util.hasFullAdminRights()) {
 				log.info("Registering as system wide application.");
 				app = new App(Scope.SYSTEM,
-						saveToPreferences(jaulApp, clazz, appDir, appFile, getSystemPreferences()));
+						saveToPreferences(jaulApp, appDir, appFile, getSystemPreferences()));
 			} else {
 				log.info("Registering as user application.");
-				app = new App(Scope.USER, saveToPreferences(jaulApp, clazz, appDir, appFile, getUserPreferences()));
+				app = new App(Scope.USER, saveToPreferences(jaulApp, appDir, appFile, getUserPreferences()));
 			}
 			var telem = telemetryForApp(app).build();
 			telem.event(telem.builder().withType(Type.REGISTER).withDescription("Application registered.").build());
@@ -358,7 +372,7 @@ public class AppRegistry {
 		}
 	}
 
-	private Preferences saveToPreferences(JaulApp app, Class<?> clazz, Path appDir, Path appFile, Preferences p) {
+	private Preferences saveToPreferences(JaulAppProvider app, Path appDir, Path appFile, Preferences p) {
 
 		log.info("App :");
 		log.info("   ID: {}", app.id());
