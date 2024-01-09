@@ -17,7 +17,7 @@ public interface JaulAppProvider {
 			
 			@Override
 			public String updatesUrl() {
-				return id;
+				return updatesUrl;
 			}
 			
 			@Override
