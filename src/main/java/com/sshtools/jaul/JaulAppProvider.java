@@ -22,7 +22,7 @@ public interface JaulAppProvider {
 			
 			@Override
 			public String updaterId() {
-				return updaterId();
+				return updaterId;
 			}
 			
 			@Override

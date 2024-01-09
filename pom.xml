@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.sshtools</groupId>
 	<artifactId>jaul</artifactId>
-	<version>0.9.0</version>
+	<version>0.9.1</version>
 	<name>Jadaptive Application Update Library</name>
 	<description>A library used across several JAdpative applications, it provides some common features based on Install4J Runtime. </description>
 	<properties>
