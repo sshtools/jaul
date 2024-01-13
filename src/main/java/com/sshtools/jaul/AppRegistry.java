@@ -23,6 +23,7 @@ import com.install4j.api.Util;
 import com.install4j.api.update.ApplicationDisplayMode;
 import com.sshtools.jaul.Telemetry.TelemetryBuilder;
 import com.sshtools.jaul.TelemetryEvent.Type;
+import com.sshtools.jaul.UpdateDescriptor.MediaType;
 
 public class AppRegistry {
 	@SuppressWarnings("serial")
@@ -33,7 +34,7 @@ public class AppRegistry {
 		private final String updatesUrl;
 		private final String launcherId;
 		private final AppCategory category;
-		private final InstallPackaging packaging;
+		private final MediaType packaging;
 		private final String appPreferences;
 
 		App(Scope scope, Preferences node) {
@@ -50,12 +51,12 @@ public class AppRegistry {
 			if (launcherId.equals(""))
 				throw new IllegalArgumentException("Invalid app data, missing launcherId.");
 			var descriptorStr = node.get("updatesUrl", "");
-			packaging = InstallPackaging.valueOf(node.get("packaging", InstallPackaging.INSTALLER.name()));
+			packaging = MediaType.valueOf(node.get("packaging", MediaType.INSTALLER.name()));
 			updatesUrl = descriptorStr.equals("") ? null : descriptorStr;
 			category = AppCategory.valueOf(node.get("category", ApplicationDisplayMode.GUI.name()));
 		}
 
-		public final InstallPackaging getPackaging() {
+		public final MediaType getPackaging() {
 			return packaging;
 		}
 
@@ -349,19 +350,19 @@ public class AppRegistry {
 	
 	@Deprecated
 	public App register(Class<?> clazz) {
-		return register(clazz, InstallPackaging.INSTALLER);
+		return register(clazz, MediaType.INSTALLER);
 	}
 	
-	public App register(Class<?> clazz, InstallPackaging packaging) {
+	public App register(Class<?> clazz, MediaType packaging) {
 		return register(JaulAppProvider.fromClass(clazz), packaging);
 	}
 	
 	@Deprecated
 	public App register(JaulAppProvider jaulApp) {
-		return register(jaulApp, InstallPackaging.INSTALLER);
+		return register(jaulApp, MediaType.INSTALLER);
 	}
 	
-	public App register(JaulAppProvider jaulApp, InstallPackaging packaging) {
+	public App register(JaulAppProvider jaulApp, MediaType packaging) {
 		var appDir = resolveAppDir();
 		var appFile = appDir.resolve(".install4j").resolve("i4jparams.conf");
 		if (Files.exists(appFile)) {
@@ -430,7 +431,7 @@ public class AppRegistry {
 		}
 	}
 
-	private Preferences saveToPreferences(JaulAppProvider app, Path appDir, Path appFile, InstallPackaging packaging, Preferences p) {
+	private Preferences saveToPreferences(JaulAppProvider app, Path appDir, Path appFile, MediaType packaging, Preferences p) {
 
 		log.info("App :");
 		log.info("   ID: {}", app.id());

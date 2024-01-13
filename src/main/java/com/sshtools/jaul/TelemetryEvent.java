@@ -3,6 +3,7 @@ package com.sshtools.jaul;
 import java.io.Serializable;
 
 import com.sshtools.jaul.AppRegistry.Scope;
+import com.sshtools.jaul.UpdateDescriptor.MediaType;
 
 @SuppressWarnings("serial")
 public class TelemetryEvent implements Serializable {
@@ -13,7 +14,7 @@ public class TelemetryEvent implements Serializable {
 
 	public static class TelemetryEventBuilder {
 		private Type type = Type.CUSTOM;
-		private InstallPackaging packaging = InstallPackaging.INSTALLER;
+		private MediaType packaging = MediaType.INSTALLER;
 		private String description;
 		private String appId;
 		private String runId;
@@ -24,7 +25,7 @@ public class TelemetryEvent implements Serializable {
 			return this;
 		}
 		
-		public TelemetryEventBuilder withPackaging(InstallPackaging packaging) {
+		public TelemetryEventBuilder withPackaging(MediaType packaging) {
 			this.packaging = packaging;
 			return this;
 		}
@@ -60,7 +61,7 @@ public class TelemetryEvent implements Serializable {
 	private final Type type;
 	private final Scope scope;
 	private final long timestamp = System.currentTimeMillis();
-	private final InstallPackaging packaging;
+	private final MediaType packaging;
 	
 	TelemetryEvent(TelemetryEventBuilder builder) {
 		if(builder.runId == null)
@@ -78,7 +79,7 @@ public class TelemetryEvent implements Serializable {
 		this.packaging = builder.packaging;
 	}
 	
-	public final InstallPackaging getPackaging() {
+	public final MediaType getPackaging() {
 		return packaging;
 	}
 

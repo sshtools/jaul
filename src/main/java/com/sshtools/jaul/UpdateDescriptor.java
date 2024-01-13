@@ -1,0 +1,331 @@
+package com.sshtools.jaul;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
+
+import com.install4j.api.Util;
+
+public class UpdateDescriptor {
+	static Logger log = LoggerFactory.getLogger(UpdateDescriptor.class);
+
+	public enum MediaType {
+		INSTALLER, RPM, DEB, ARCHIVE;
+
+		public String pattern() {
+			switch (this) {
+			case INSTALLER:
+				return ".*\\.sh|.*\\.exe|.*\\.msi|.*\\.dmg";
+			case RPM:
+				return ".*\\.rpm";
+			case DEB:
+				return ".*\\.deb";
+			case ARCHIVE:
+				return ".*\\.zip|.*\\.tgz|.*\\.tar\\.gz";
+			default:
+				throw new UnsupportedOperationException();
+			}
+		}
+	}
+	
+	public enum MediaOS {
+		LINUX, WINDOWS, MACOS, UNIX;
+
+		public String pattern() {
+			switch (this) {
+			case LINUX:
+				return ".*-linux-.*\\.sh|.*-linux-.*\\.zip|.*-linux-.*\\.tgz|.*-windows-.*\\.tar\\.gz|.*\\.rpm|.*\\.deb";
+			case WINDOWS:
+				return ".*\\.exe|.*-windows-.*\\.zip|.*-windows-.*\\.tgz|.*-windows-.*\\.tar\\.gz";
+			case MACOS:
+				return ".*\\.dmg|.*-mac-.*\\.zip|.*-macos-.*\\.tgz|.*-macos-.*\\.tar\\.gz|.*-mac-.*\\.zip|.*-macos-.*\\.tgz|.*-macos-.*\\.tar\\.gz";
+			default:
+				return ".*\\.sh|.*-unix-.*\\.zip|.*-unix-.*\\.tgz|.*-unix-.*\\.tar\\.gz";
+			}
+		}
+
+		public static MediaOS get() {
+			if (Util.isWindows()) {
+				return MediaOS.WINDOWS;
+			} else if (Util.isMacOS()) {
+				return MediaOS.MACOS;
+			} else if (Util.isLinux()) {
+				return MediaOS.LINUX;
+			} else {
+				return MediaOS.UNIX;
+			}
+		}
+	}
+
+	public enum MediaArch {
+		X86, X86_64, ARM32, AARCH64, XPLATFORM;
+
+		public String pattern() {
+			switch (this) {
+			case X86:
+				return ".*-x86-.*";
+			case X86_64:
+				return ".*-(amd64|x8664|x86_64|x86-64)-.*";
+			case AARCH64:
+				return ".*-(aarch64|arm64)-.*";
+			case ARM32:
+				return ".*-(arm.*)-.*";
+			default:
+				return ".*";
+			}
+		}
+
+		public static MediaArch get() {
+			var arch = System.getProperty("os.arch", "unknown");
+			if (Util.is64BitWindows()) {
+				return MediaArch.X86_64;
+			} else if (arch.equals("x86_64") || arch.equals("amd64") || arch.equals("ia64")) {
+				return MediaArch.X86_64;
+			} else if (arch.equals("aarch64")) {
+				return MediaArch.AARCH64;
+			} else if (arch.equals("aarch32") || arch.equals("arm")) {
+				return MediaArch.ARM32;
+			} else if (arch.equals("x86")) {
+				return MediaArch.X86;
+			} else {
+				return MediaArch.XPLATFORM;
+			}
+		}
+	}
+
+	public final static class Media {
+		private final MediaKey key;
+		private final URL url;
+		private final long fileSize;
+		private final String name;
+		private final String md5Sum;
+		private final String sha256Sum;
+		private final String version;
+
+		Media(MediaKey key, String name, URL url, long fileSize, String md5Sum, String sha256Sum, String version) {
+			super();
+			this.version = version;
+			this.name = name;
+			this.key = key;
+			this.url = url;
+			this.fileSize = fileSize;
+			this.md5Sum = md5Sum;
+			this.sha256Sum = sha256Sum;
+		}
+
+		public final String version() {
+			return version;
+		}
+
+		public final MediaKey key() {
+			return key;
+		}
+
+		public final URL url() {
+			return url;
+		}
+
+		public final long fileSize() {
+			return fileSize;
+		}
+
+		public final String name() {
+			return name;
+		}
+
+		public final String md5Sum() {
+			return md5Sum;
+		}
+
+		public final String sha256Sum() {
+			return sha256Sum;
+		}
+
+		@Override
+		public String toString() {
+			return "Media [key=" + key + ", url=" + url + ", fileSize=" + fileSize + ", name=" + name + ", md5Sum="
+					+ md5Sum + ", sha256Sum=" + sha256Sum + ", version=" + version + "]";
+		}
+	}
+
+	public final static class MediaKey {
+		private final MediaOS os;
+		private final MediaArch arch;
+		private final MediaType type;
+
+		public MediaKey(MediaOS os, MediaArch arch, MediaType type) {
+			super();
+			this.os = os;
+			this.arch = arch;
+			this.type = type;
+		}
+
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(arch, os, type);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			MediaKey other = (MediaKey) obj;
+			return arch == other.arch && os == other.os && type == other.type;
+		}
+
+
+		public static MediaKey get() {
+			return new MediaKey(MediaOS.get(), MediaArch.get(), MediaType.INSTALLER);
+		}
+
+		public MediaArch arch() {
+			return arch;
+		}
+
+		public MediaOS os() {
+			return os;
+		}
+
+		@Override
+		public String toString() {
+			return "MediaKey [os=" + os + ", arch=" + arch + ", type=" + type + "]";
+		}
+
+		public MediaType type() {
+			return type;
+		}
+
+	}
+
+	private final Map<MediaKey, Media> mediaUrls = new HashMap<>();
+	
+	public static UpdateDescriptor get(URI uri) throws IOException {
+		try {
+			var client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build();
+			var request = HttpRequest.newBuilder().uri(uri).timeout(Duration.ofMinutes(2)).GET().build();
+
+			var response = client.send(request, BodyHandlers.ofInputStream());
+
+			if (response.statusCode() == 200) {
+				return new UpdateDescriptor(response.body());
+
+			} else {
+				throw new IOException("Unexpected response code for " + uri + ". " + response.statusCode());
+			}
+		} catch (InterruptedException e) {
+			throw new IOException("Failed to load remote descriptor.", e);
+		}
+	}
+
+	public UpdateDescriptor(InputStream in) throws IOException {
+		try {
+			var docBuilderFactory = DocumentBuilderFactory.newInstance();
+			var docBuilder = docBuilderFactory.newDocumentBuilder();
+			var doc = docBuilder.parse(in);
+			var ud = doc.getDocumentElement();
+			var mediaBaseUrl = ud.getAttributes().getNamedItem("baseUrl").getTextContent();
+			var entries = doc.getDocumentElement().getElementsByTagName("entry");
+
+			for (int i = 0; i < entries.getLength(); i++) {
+				var el = entries.item(i);
+
+				var fileSize = Long.parseLong(el.getAttributes().getNamedItem("fileSize").getTextContent());
+				var md5Sum = getAttrVal(el, "md5Sum");
+				var version = getAttrVal(el, "newVersion");
+				var sha256Sum = getAttrVal(el, "sha256Sum");
+				var fileName = el.getAttributes().getNamedItem("fileName").getTextContent();
+				var bundledJre = el.getAttributes().getNamedItem("bundledJre").getTextContent();
+				
+				if(fileName.contains("jenkins-agent-macos-0_0_1-16.dmg")) {
+					System.out.println("brk!");
+				}
+				
+				MediaType mediaType = null;
+				for (var type : MediaType.values()) {
+					if (fileName.matches(type.pattern())) {
+						mediaType = type;
+						break;
+					}
+				}
+				if(mediaType == null) {
+					log.warn("Skipping {} in descriptor, it doesn't match any media type.", fileName);
+					continue;
+				}
+
+				MediaOS mediaOs = null;
+				for (var os : MediaOS.values()) {
+					if (fileName.matches(os.pattern())) {
+						mediaOs = os;
+						break;
+					}
+				}
+				if(mediaOs == null) {
+					log.warn("Skipping {} in descriptor, it doesn't match any OS.", fileName);
+					continue;
+				}
+				
+				var mediaArch = MediaArch.XPLATFORM;
+				for (var arch : MediaArch.values()) {
+					if (fileName.matches(arch.pattern())) {
+						if (bundledJre.matches("linux-.*") && mediaOs == MediaOS.UNIX) {
+							mediaOs = MediaOS.LINUX;
+						}
+						mediaArch = arch;
+						break;
+					}
+				}
+
+				var mediaKey = new MediaKey(mediaOs, mediaArch, mediaType);
+				var media = new Media(mediaKey, fileName, new URL(new URL(mediaBaseUrl), fileName), fileSize, md5Sum,
+						sha256Sum, version);
+				mediaUrls.put(mediaKey, media);
+
+			}
+
+		} catch (ParserConfigurationException | SAXException e) {
+			throw new IOException("Failed to load remote descriptor.", e);
+		}
+	}
+
+	public final Map<MediaKey, Media> getMediaUrls() {
+		return mediaUrls;
+	}
+
+	public final Optional<Media> getMedia() {
+		var key = MediaKey.get();
+		var media = getMediaUrls().get(key);
+		if(media == null && key.arch() != MediaArch.XPLATFORM) {
+			key = new MediaKey(key.os(), MediaArch.XPLATFORM, key.type());
+			media = getMediaUrls().get(key);
+		}
+		return Optional.ofNullable(media);
+	}
+
+	private String getAttrVal(Node el, String name) {
+		var attr = el.getAttributes().getNamedItem(name);
+		return attr == null ? null : attr.getTextContent();
+	}
+
+}

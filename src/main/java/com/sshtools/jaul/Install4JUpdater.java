@@ -29,6 +29,7 @@ public final class Install4JUpdater implements Callable<String> {
 		private Optional<String> updateUrl = Optional.empty();
 		private boolean consoleMode;
 		private boolean checkOnly = true;
+		private boolean inProcess = true;
 		private Optional<String> currentVersion = Optional.empty();
 		private Optional<String> launcherId = Optional.empty();
 		private Optional<String[]> args = Optional.empty();
@@ -58,6 +59,15 @@ public final class Install4JUpdater implements Callable<String> {
 			return withLauncherId(app.getLauncherId()).
 				   withCurrentVersion(ctx.getVersion()).
 				   withUpdateUrl(app.getUpdatesUrl().get().replace("${phase}", ctx.getPhase().name().toLowerCase()));
+		}
+
+		public Install4JUpdaterBuilder withoutInProcess() {
+			return withInProcess(false);
+		}
+
+		public Install4JUpdaterBuilder withInProcess(boolean inProcess) {
+			this.inProcess = inProcess;
+			return this;
 		}
 
 		public Install4JUpdaterBuilder withConsoleMode() {
@@ -128,6 +138,7 @@ public final class Install4JUpdater implements Callable<String> {
 	static Logger log = LoggerFactory.getLogger(Install4JUpdateService.class);
 	private final String uurl;
 	private final boolean consoleMode;
+	private final boolean inProcess;
 	private final String currentVersion;
 	private final String launcherId;
 	private final boolean checkOnly;
@@ -141,6 +152,7 @@ public final class Install4JUpdater implements Callable<String> {
 		this.onPrepareShutdown = builder.onPrepareShutdown;
 		this.uurl = builder.updateUrl.orElseThrow(() -> new IllegalStateException("Must provide update URL"));
 		this.consoleMode = builder.consoleMode;
+		this.inProcess = builder.inProcess;
 		this.currentVersion = builder.currentVersion
 				.orElseThrow(() -> new IllegalStateException("Current version must be supplied"));
 		this.launcherId = builder.launcherId
@@ -181,23 +193,44 @@ public final class Install4JUpdater implements Callable<String> {
 				if (consoleMode)
 					args.add("-c");
 				this.args.ifPresent(a -> args.addAll(Arrays.asList(a)));
-				ApplicationLauncher.launchApplicationInProcess(launcherId, args.toArray(new String[0]), new ApplicationLauncher.Callback() {
-					@Override
-					public void exited(int exitValue) {
-						onExit.ifPresent(oe -> oe.accept(exitValue));
-					} 
-
-					@Override
-					public void prepareShutdown() {
-						// not invoked on event dispatch thread)
-						onPrepareShutdown.ifPresent(oe -> oe.run());
-					}
-
-					@Override
-					public ProgressListener createProgressListener() {
-						return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
-					}
-				}, ApplicationLauncher.WindowMode.FRAME, null);
+				if(inProcess) {				
+					ApplicationLauncher.launchApplicationInProcess(launcherId, args.toArray(new String[0]), new ApplicationLauncher.Callback() {
+						@Override
+						public void exited(int exitValue) {
+							onExit.ifPresent(oe -> oe.accept(exitValue));
+						} 
+	
+						@Override
+						public void prepareShutdown() {
+							// not invoked on event dispatch thread)
+							onPrepareShutdown.ifPresent(oe -> oe.run());
+						}
+	
+						@Override
+						public ProgressListener createProgressListener() {
+							return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
+						}
+					}, ApplicationLauncher.WindowMode.FRAME, null);
+				}
+				else {
+					ApplicationLauncher.launchApplication(launcherId, args.toArray(new String[0]), true, new ApplicationLauncher.Callback() {
+						@Override
+						public void exited(int exitValue) {
+							onExit.ifPresent(oe -> oe.accept(exitValue));
+						} 
+	
+						@Override
+						public void prepareShutdown() {
+							// not invoked on event dispatch thread)
+							onPrepareShutdown.ifPresent(oe -> oe.run());
+						}
+	
+						@Override
+						public ProgressListener createProgressListener() {
+							return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
+						}
+					});
+				}
 			}
 		} catch (UserCanceledException e) {
 			log.info("Cancelled.");
