@@ -272,6 +272,44 @@ public class AppRegistry {
 		return get(id);
 	}
 
+	public App get(Path installDir) {
+		try {
+			log.debug("Retrieving as user application.");
+			var userRoot = getUserPreferences();
+			for(var userAppId : userRoot.childrenNames()) {
+				var app = new App(Scope.USER, userRoot.node(userAppId));
+				try {
+					if(installDir.toRealPath().equals(app.getDir().toRealPath())) {
+						return app;
+					}
+				}
+				catch(Exception ioe) {
+					log.debug("Ignoring error looking for registered app give path " + installDir, ioe);
+				}
+			}
+			
+			log.debug("Retrieving as system application.");
+			var sysRoot = getSystemPreferences();
+			for(var systemAppId : sysRoot.childrenNames()) {
+				var app = new App(Scope.SYSTEM, sysRoot.node(systemAppId));
+				try {
+					if(installDir.toRealPath().equals(app.getDir().toRealPath())) {
+						return app;
+					}
+				}
+				catch(Exception ioe) {
+					log.debug("Ignoring error looking for registered app give path " + installDir, ioe);
+				}
+			}
+
+			throw new IllegalStateException(
+					"Cannot get app, as it has not been registered. This is usually done at installation time using '--jaul-register'. Either this did not happen,  "
+							+ "or you are running in a development environment. You can fake an installation by linking '.install4j' directory from a real installation, then running this app with '--jaul-register'.");
+		} catch (BackingStoreException bse) {
+			throw new IllegalStateException("Failed to query preferences api for application registry details.", bse);
+		}
+	}
+
 	public App get(String id) {
 		try {
 			log.debug("Retrieving as user application.");

@@ -2,16 +2,22 @@ package com.sshtools.jaul;
 
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Supplier;
 import java.util.prefs.Preferences;
 
 public class PreferenceBasedUpdateableAppContext implements UpdateableAppContext {
 
 	private final Preferences preferences;
-	private final String version;
 	private final Optional<Phase> defaultPhase;
 	private final Optional<ScheduledExecutorService> scheduler;
+	private final Supplier<String> version;
 
+	@Deprecated
 	public PreferenceBasedUpdateableAppContext(Preferences preferences, Optional<Phase> defaultPhase, String version, Optional<ScheduledExecutorService> scheduler) {
+		this(preferences, defaultPhase, () -> version, scheduler);
+	}
+
+	public PreferenceBasedUpdateableAppContext(Preferences preferences, Optional<Phase> defaultPhase, Supplier<String> version, Optional<ScheduledExecutorService> scheduler) {
 		this.preferences = preferences;
 		this.defaultPhase = defaultPhase;
 		this.version = version;
@@ -50,12 +56,17 @@ public class PreferenceBasedUpdateableAppContext implements UpdateableAppContext
 	@Override
 	public Phase getPhase() {
 		return Phase.valueOf(getPreferences().get(AppRegistry.KEY_PHASE,
-				defaultPhase.orElse(Phase.getDefaultPhaseForVersion(version)).name()));
+				defaultPhase.orElse(Phase.getDefaultPhaseForVersion(getVersion())).name()));
 	}
 
 	@Override
 	public void setPhase(Phase phase) {
 		getPreferences().put(AppRegistry.KEY_PHASE, phase.name());
 
+	}
+
+	@Override
+	public String getVersion() {
+		return version.get();
 	}
 }

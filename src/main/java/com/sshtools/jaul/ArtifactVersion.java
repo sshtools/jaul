@@ -8,6 +8,8 @@ import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.w3c.dom.Element;
+
 public class ArtifactVersion {
 
 	static Map<String, String> versions = Collections.synchronizedMap(new HashMap<>());
@@ -20,6 +22,15 @@ public class ArtifactVersion {
 		return new File("pom.xml").exists();
 	}
 	
+	/**
+	 * Use {@link #getVersion(String, String)}.
+	 * 
+	 * @param installerShortName
+	 * @param groupId
+	 * @param artifactId
+	 * @return
+	 */
+	@Deprecated(forRemoval = true)
 	public static String getVersion(String installerShortName, String groupId, String artifactId) {
 		String fakeVersion = Boolean.getBoolean("jadaptive.development")
 				? System.getProperty("jadaptive.development.version", System.getProperty("jadaptive.devVersion"))
@@ -36,20 +47,36 @@ public class ArtifactVersion {
 		 * file exists, it will contain the full application version which
 		 * will have the build number in it too. 
 		 */
-		if(installerShortName != null) {
 			try {
 				var docBuilderFactory = DocumentBuilderFactory.newInstance();
 				var docBuilder = docBuilderFactory.newDocumentBuilder();
 				var appDir = new File(System.getProperty("install4j.installationDir", System.getProperty("user.dir")));
 				var doc = docBuilder.parse(new File(new File(appDir, ".install4j"),"i4jparams.conf"));
-				var el = doc.getDocumentElement().getElementsByTagName("general").item(0);
-				var mediaName = el.getAttributes().getNamedItem("mediaName").getTextContent();
-				if(mediaName.startsWith(installerShortName + "-")) {
-					detectedVersion = el.getAttributes().getNamedItem("applicationVersion").getTextContent();
+
+				if(installerShortName != null) {
+					var el = doc.getDocumentElement().getElementsByTagName("general").item(0);
+					var mediaName = el.getAttributes().getNamedItem("mediaName").getTextContent();
+					if(mediaName.startsWith(installerShortName + "-")) {
+						detectedVersion = el.getAttributes().getNamedItem("applicationVersion").getTextContent();
+					}
+				}
+				else {
+					var els = doc.getDocumentElement().getElementsByTagName("compilerVariables");
+					for(int i = 0 ; i < els.getLength(); i++) {
+						var varEl = els.item(i);
+						if(varEl instanceof Element) {
+							var el = (Element)varEl;
+							var ver = el.getAttribute("sys.version");
+							if(ver != null) {
+								detectedVersion = ver;
+								break;
+							}
+						}
+					}
 				}
 			} catch (Exception e) {
 			}
-		}
+
 
 		if (detectedVersion.equals("")) {		
 	

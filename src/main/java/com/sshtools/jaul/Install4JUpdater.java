@@ -2,9 +2,11 @@ package com.sshtools.jaul;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +18,7 @@ import com.install4j.api.launcher.ApplicationLauncher.ProgressListener;
 import com.install4j.api.update.ApplicationDisplayMode;
 import com.install4j.api.update.UpdateChecker;
 import com.install4j.api.update.UpdateDescriptor;
+import com.sshtools.jaul.AppRegistry.App;
 
 public final class Install4JUpdater implements Callable<String> {
 
@@ -26,10 +29,32 @@ public final class Install4JUpdater implements Callable<String> {
 		private boolean checkOnly = true;
 		private Optional<String> currentVersion = Optional.empty();
 		private Optional<String> launcherId = Optional.empty();
+		private Optional<String[]> args = Optional.empty();
 		private Optional<Consumer<Integer>> onExit = Optional.empty();
+		private Optional<Supplier<ProgressListener>> progressListenerFactory = Optional.empty();
+		private Optional<Runnable> onPrepareShutdown = Optional.empty();
 
 		public static Install4JUpdaterBuilder builder() {
 			return new Install4JUpdaterBuilder();
+		}
+		
+		public Install4JUpdaterBuilder withProgressListenerFactory(Supplier<ProgressListener> progressListenerFactory) {
+			this.progressListenerFactory = Optional.of(progressListenerFactory);
+			return this;
+		}
+		
+		public Install4JUpdaterBuilder withArgs(String... args) {
+			this.args = Optional.of(args);
+			return this;
+		}
+		
+		public Install4JUpdaterBuilder withArgs(Collection<String> args) {
+			return withArgs(args.toArray(new String[0]));
+		}
+		
+		public Install4JUpdaterBuilder withApp(App app) {
+			return withLauncherId(app.getLauncherId()).
+				   withUpdateUrl(app.getUpdatesUrl());
 		}
 
 		public Install4JUpdaterBuilder withConsoleMode() {
@@ -86,6 +111,11 @@ public final class Install4JUpdater implements Callable<String> {
 			return this;
 		}
 
+		public Install4JUpdaterBuilder onPrepareShutdown(Runnable onPrepareShutdown) {
+			this.onPrepareShutdown = Optional.of(onPrepareShutdown);
+			return this;
+		}
+
 		public Install4JUpdater build() {
 			return new Install4JUpdater(this);
 		}
@@ -99,8 +129,13 @@ public final class Install4JUpdater implements Callable<String> {
 	private final String launcherId;
 	private final boolean checkOnly;
 	private final Optional<Consumer<Integer>> onExit;
+	private final Optional<Runnable> onPrepareShutdown;
+	private final Optional<String[]> args;
+	private final Optional<Supplier<ProgressListener>> progressListenerFactory;
 
 	private Install4JUpdater(Install4JUpdaterBuilder builder) {
+		this.args = builder.args;
+		this.onPrepareShutdown = builder.onPrepareShutdown;
 		this.uurl = builder.updateUrl.orElseThrow(() -> new IllegalStateException("Must provide update URL"));
 		this.consoleMode = builder.consoleMode;
 		this.currentVersion = builder.currentVersion
@@ -109,6 +144,7 @@ public final class Install4JUpdater implements Callable<String> {
 				.orElseThrow(() -> new IllegalStateException("Launcher ID must be supplied"));
 		this.checkOnly = builder.checkOnly;
 		this.onExit = builder.onExit;
+		this.progressListenerFactory = builder.progressListenerFactory;
 	}
 
 	@Override
@@ -152,12 +188,12 @@ public final class Install4JUpdater implements Callable<String> {
 					@Override
 					public void prepareShutdown() {
 						// TODO add your code here (not invoked on event dispatch thread)
+						onPrepareShutdown.ifPresent(oe -> oe.run());
 					}
 
 					@Override
 					public ProgressListener createProgressListener() {
-						// TODO Auto-generated method stub
-						return Callback.super.createProgressListener();
+						return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
 					}
 				}, ApplicationLauncher.WindowMode.FRAME, null);
 			}

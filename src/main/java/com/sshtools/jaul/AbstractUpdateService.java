@@ -27,16 +27,10 @@ public abstract class AbstractUpdateService implements UpdateService {
 	private final UpdateableAppContext context;
 	private Optional<Consumer<String>> onAvailableVersion = Optional.empty();
 	private Optional<Consumer<Boolean>> onBusy = Optional.empty();
-	private final String currentVersion;
 	private boolean checkOnly;
 	
-	protected AbstractUpdateService(UpdateableAppContext context, String currentVersion) {
+	protected AbstractUpdateService(UpdateableAppContext context) {
 		this.context = context;
-		this.currentVersion = currentVersion;
-	}
-
-	public final String getCurrentVersion() {
-		return currentVersion;
 	}
 
 	@Override
@@ -81,7 +75,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 	@Override
 	public final Phase[] getPhases() {
 		return Arrays.asList(Phase.values()).stream()
-				.filter(p -> p != Phase.CONTINUOUS || p == context.getPhase() || p == Phase.getDefaultPhaseForVersion(currentVersion) || (p == Phase.CONTINUOUS
+				.filter(p -> p != Phase.CONTINUOUS || p == context.getPhase() || p == Phase.getDefaultPhaseForVersion(context.getVersion()) || (p == Phase.CONTINUOUS
 						&& (  ArtifactVersion.isDeveloperWorkspace() || Boolean.getBoolean("jaul.continuous") || Boolean.getBoolean("jadaptive.development"))))
 				.collect(Collectors.toList()).toArray(new Phase[0]);
 	}
@@ -144,7 +138,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 		setDeferUntil(when);
 		try {
 			rescheduleCheck(0);
-			log.info("Deferred update for " + DateFormat.getDateTimeInstance().format(new Date(when)) + " days");
+			log.info("Deferred update until " + DateFormat.getDateTimeInstance().format(new Date(when)));
 		}
 		catch(UnsupportedOperationException uoe) {
 			log.info("No scheduler, update check will not occur this runtime.");
@@ -217,7 +211,14 @@ public abstract class AbstractUpdateService implements UpdateService {
 				setDeferUntil(0);
 				setUpdating(true, check);
 				try {
-					setAvailableVersion(doUpdate(check));
+					var ver = doUpdate(check);
+					if(ver == null) {
+						log.info("No updates available");
+					}
+					else {
+						log.info("Version {} is available.", ver);
+					}
+					setAvailableVersion(ver);
 				} finally {
 					setUpdating(false, check);
 					if (check) {

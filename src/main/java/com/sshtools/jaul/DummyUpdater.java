@@ -1,10 +1,12 @@
 package com.sshtools.jaul;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 public final class DummyUpdater implements Callable<String> {
 	
@@ -14,6 +16,7 @@ public final class DummyUpdater implements Callable<String> {
 		private long updatePause = 5000;
 		private boolean fail = true;
 		private boolean checkOnly = true;
+		private Optional<Runnable> onExit;
 
 		public static DummyUpdaterBuilder builder() {
 			return new DummyUpdaterBuilder();
@@ -51,6 +54,11 @@ public final class DummyUpdater implements Callable<String> {
 			return withCheckOnly(true);
 		}
 
+		public DummyUpdaterBuilder onExit(Runnable onExit) {
+			this.onExit = Optional.of(onExit);
+			return this;
+		}
+
 		public DummyUpdater build() {
 			return new DummyUpdater(this);
 		}
@@ -63,12 +71,14 @@ public final class DummyUpdater implements Callable<String> {
 	private final long updatePause;
 	private final boolean fail;
 	private final boolean check;
+	private final Optional<Runnable> onExit;
 
 	private DummyUpdater(DummyUpdaterBuilder builder) {
 		this.checkPause = builder.checkPause;
 		this.updatePause = builder.updatePause;
 		this.fail = builder.fail;
 		this.check = builder.checkOnly;
+		this.onExit = builder.onExit;
 	}
 
 	@Override
@@ -88,8 +98,10 @@ public final class DummyUpdater implements Callable<String> {
 			}
 			if(fail)
 				throw new IOException("Failed to update.");
-			else
+			else {
+				onExit.ifPresent(Runnable::run);
 				return fakeVersion;
+			}
 		}
 
 	}

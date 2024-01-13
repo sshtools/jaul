@@ -17,4 +17,6 @@ public interface UpdateableAppContext {
 	long getUpdatesDeferredUntil();
 
 	void setUpdatesDeferredUntil(long timeMs);
+	
+	String getVersion();
 }

@@ -1,6 +1,7 @@
 package com.sshtools.jaul;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,28 +22,27 @@ public class Install4JUpdateService extends AbstractUpdateService {
 		ApplicationLauncher.isNewArchiveInstallation();
 
 		return new Install4JUpdateService(context, 
-				Install4JUpdaterBuilder.builder().
+				() -> Install4JUpdaterBuilder.builder().
 				withCurrentVersion(version).
 				withConsoleMode(consoleMode).
 				withLauncherId(app.getLauncherId()).
 				withUpdateUrl(app.getUpdatesUrl().get().replace("${phase}", context.getPhase().name().toLowerCase())).
-				onExit((e) -> System.exit(e)),
-				version);
+				onExit((e) -> System.exit(e)));
 
 	}
 
 	static Logger log = LoggerFactory.getLogger(Install4JUpdateService.class);
 	
-	private final Install4JUpdaterBuilder builder;
+	private final Supplier<Install4JUpdaterBuilder> builderFactory;
 
-	public Install4JUpdateService(UpdateableAppContext context, Install4JUpdaterBuilder builder, String currentVersion) {
-		super(context, currentVersion);
-		this.builder = builder;
+	public Install4JUpdateService(UpdateableAppContext context, Supplier<Install4JUpdaterBuilder> builderFactory) {
+		super(context);
+		this.builderFactory = builderFactory;
 	}
 
 	@Override
 	protected String doUpdate(boolean checkOnly) throws IOException {
-		return builder.withCheckOnly(checkOnly).build().call();
+		return builderFactory.get().withCheckOnly(checkOnly).withCurrentVersion(getContext().getVersion()).build().call();
 
 	}
 
