@@ -33,6 +33,7 @@ public class AppRegistry {
 		private final String updatesUrl;
 		private final String launcherId;
 		private final AppCategory category;
+		private final InstallPackaging packaging;
 		private final String appPreferences;
 
 		App(Scope scope, Preferences node) {
@@ -49,8 +50,13 @@ public class AppRegistry {
 			if (launcherId.equals(""))
 				throw new IllegalArgumentException("Invalid app data, missing launcherId.");
 			var descriptorStr = node.get("updatesUrl", "");
+			packaging = InstallPackaging.valueOf(node.get("packaging", InstallPackaging.INSTALLER.name()));
 			updatesUrl = descriptorStr.equals("") ? null : descriptorStr;
 			category = AppCategory.valueOf(node.get("category", ApplicationDisplayMode.GUI.name()));
+		}
+
+		public final InstallPackaging getPackaging() {
+			return packaging;
 		}
 
 		public final Preferences getAppPreferences() {
@@ -340,12 +346,22 @@ public class AppRegistry {
 						"TelemetryWrite"));
 		return app;
 	}
-
+	
+	@Deprecated
 	public App register(Class<?> clazz) {
-		return register(JaulAppProvider.fromClass(clazz));
+		return register(clazz, InstallPackaging.INSTALLER);
 	}
 	
+	public App register(Class<?> clazz, InstallPackaging packaging) {
+		return register(JaulAppProvider.fromClass(clazz), packaging);
+	}
+	
+	@Deprecated
 	public App register(JaulAppProvider jaulApp) {
+		return register(jaulApp, InstallPackaging.INSTALLER);
+	}
+	
+	public App register(JaulAppProvider jaulApp, InstallPackaging packaging) {
 		var appDir = resolveAppDir();
 		var appFile = appDir.resolve(".install4j").resolve("i4jparams.conf");
 		if (Files.exists(appFile)) {
@@ -353,13 +369,17 @@ public class AppRegistry {
 			if (!Boolean.getBoolean("jaul.forceUserRegistration") && Util.hasFullAdminRights()) {
 				log.info("Registering as system wide application.");
 				app = new App(Scope.SYSTEM,
-						saveToPreferences(jaulApp, appDir, appFile, getSystemPreferences()));
+						saveToPreferences(jaulApp, appDir, appFile, packaging, getSystemPreferences()));
 			} else {
 				log.info("Registering as user application.");
-				app = new App(Scope.USER, saveToPreferences(jaulApp, appDir, appFile, getUserPreferences()));
+				app = new App(Scope.USER, saveToPreferences(jaulApp, appDir, appFile, packaging, getUserPreferences()));
 			}
 			var telem = telemetryForApp(app).build();
-			telem.event(telem.builder().withType(Type.REGISTER).withDescription("Application registered.").build());
+			telem.event(telem.builder().
+					withType(Type.REGISTER).
+					withPackaging(packaging).
+					withDescription("Application registered.").
+					build());
 			return app;
 		} else {
 			throw new IllegalArgumentException("Cannot register app, as system property 'install4j.installationDir' is "
@@ -410,12 +430,13 @@ public class AppRegistry {
 		}
 	}
 
-	private Preferences saveToPreferences(JaulAppProvider app, Path appDir, Path appFile, Preferences p) {
+	private Preferences saveToPreferences(JaulAppProvider app, Path appDir, Path appFile, InstallPackaging packaging, Preferences p) {
 
 		log.info("App :");
 		log.info("   ID: {}", app.id());
 		log.info("   Updates URL: {}", app.updatesUrl());
 		log.info("   Launcher ID: {}", app.updaterId());
+		log.info("   Packaging: {}", packaging);
 		log.info("   Category: {}", app.category().name());
 		log.info("   Dir: {}", appDir.toAbsolutePath().toString());
 		var appNode = p.node(app.id());
@@ -423,6 +444,7 @@ public class AppRegistry {
 			appNode.put("updatesUrl", app.updatesUrl());
 			appNode.put("launcherId", app.updaterId());
 			appNode.put("category", app.category().name());
+			appNode.put("packaging", packaging.name());
 			appNode.put("id", app.id());
 			appNode.put("appDir", appDir.toAbsolutePath().toString());
 			appNode.flush();

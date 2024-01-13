@@ -54,9 +54,10 @@ public final class Install4JUpdater implements Callable<String> {
 			return withArgs(args.toArray(new String[0]));
 		}
 		
-		public Install4JUpdaterBuilder withApp(App app, Phase phase) {
+		public Install4JUpdaterBuilder withApp(App app, UpdateableAppContext ctx) {
 			return withLauncherId(app.getLauncherId()).
-				   withUpdateUrl(app.getUpdatesUrl().get().replace("${phase}", phase.name().toLowerCase()));
+				   withCurrentVersion(ctx.getVersion()).
+				   withUpdateUrl(app.getUpdatesUrl().get().replace("${phase}", ctx.getPhase().name().toLowerCase()));
 		}
 
 		public Install4JUpdaterBuilder withConsoleMode() {
@@ -90,7 +91,6 @@ public final class Install4JUpdater implements Callable<String> {
 			return this;
 		}
 
-		@Deprecated
 		public Install4JUpdaterBuilder withCurrentVersion(String currentVersion) {
 			return withCurrentVersion(Optional.of(currentVersion));
 		}

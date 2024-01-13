@@ -13,6 +13,7 @@ public class TelemetryEvent implements Serializable {
 
 	public static class TelemetryEventBuilder {
 		private Type type = Type.CUSTOM;
+		private InstallPackaging packaging = InstallPackaging.INSTALLER;
 		private String description;
 		private String appId;
 		private String runId;
@@ -20,6 +21,11 @@ public class TelemetryEvent implements Serializable {
 		
 		public TelemetryEventBuilder withType(Type type) {
 			this.type = type;
+			return this;
+		}
+		
+		public TelemetryEventBuilder withPackaging(InstallPackaging packaging) {
+			this.packaging = packaging;
 			return this;
 		}
 		
@@ -54,6 +60,7 @@ public class TelemetryEvent implements Serializable {
 	private final Type type;
 	private final Scope scope;
 	private final long timestamp = System.currentTimeMillis();
+	private final InstallPackaging packaging;
 	
 	TelemetryEvent(TelemetryEventBuilder builder) {
 		if(builder.runId == null)
@@ -68,6 +75,11 @@ public class TelemetryEvent implements Serializable {
 		this.runId = builder.runId;
 		this.scope = builder.scope;
 		this.type = builder.type;
+		this.packaging = builder.packaging;
+	}
+	
+	public final InstallPackaging getPackaging() {
+		return packaging;
 	}
 
 	public final String getDescription() {
