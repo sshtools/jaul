@@ -62,14 +62,14 @@ public class ArtifactVersion {
 					}
 				}
 				else {
-					var els = doc.getDocumentElement().getElementsByTagName("compilerVariables");
+					var els = doc.getDocumentElement().getElementsByTagName("compilerVariables").item(0).getChildNodes();
 					for(int i = 0 ; i < els.getLength(); i++) {
 						var varEl = els.item(i);
 						if(varEl instanceof Element) {
 							var el = (Element)varEl;
-							var ver = el.getAttribute("sys.version");
-							if(ver != null) {
-								detectedVersion = ver;
+							var name = el.getAttribute("name");
+							if(name.equals("sys.version")) {
+								detectedVersion = el.getAttribute("value");
 								break;
 							}
 						}
