@@ -1,6 +1,7 @@
 package com.sshtools.jaul;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -83,12 +84,7 @@ public class ArtifactVersion {
 			// try to load from maven properties first
 			try {
 				var p = new Properties();
-				var is = ArtifactVersion.class.getClassLoader()
-						.getResourceAsStream("META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties");
-				if (is == null) {
-					is = ArtifactVersion.class
-							.getResourceAsStream("/META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties");
-				}
+				var is = findMavenMeta(groupId, artifactId);
 				if (is != null) {
 					try {
 						p.load(is);
@@ -140,5 +136,22 @@ public class ArtifactVersion {
 		versions.put(groupId+ ":" + artifactId, detectedVersion);
 
 		return detectedVersion;
+	}
+
+	private static InputStream findMavenMeta(String groupId, String artifactId) {
+		InputStream is = null;
+		var cldr = Thread.currentThread().getContextClassLoader();
+		if(cldr != null) {
+			is = cldr.getResourceAsStream("META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties");
+		}
+		if(is == null) {
+			is = ArtifactVersion.class.getClassLoader()
+					.getResourceAsStream("META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties");
+		}
+		if (is == null) {
+			is = ArtifactVersion.class
+					.getResourceAsStream("/META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties");
+		}
+		return is;
 	}
 }

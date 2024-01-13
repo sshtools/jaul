@@ -11,11 +11,22 @@ import com.sshtools.jaul.AppRegistry.App;
 import com.sshtools.jaul.Install4JUpdater.Install4JUpdaterBuilder;
 
 public class Install4JUpdateService extends AbstractUpdateService {
+	@Deprecated
+	public static Install4JUpdateService defaultInstall4JUpdateService(UpdateableAppContext context, App app) {
+		return defaultInstall4JUpdateService(context, context.getVersion(), app, false);
+	}
 
+	@Deprecated
+	public static Install4JUpdateService defaultInstall4JUpdateService(UpdateableAppContext context, App app, boolean consoleMode) {
+		return defaultInstall4JUpdateService(context, context.getVersion(), app, consoleMode);
+	}
+
+	@Deprecated
 	public static Install4JUpdateService defaultInstall4JUpdateService(UpdateableAppContext context, String version, App app) {
 		return defaultInstall4JUpdateService(context, version, app, false);
 	}
-	
+
+	@Deprecated
 	public static Install4JUpdateService defaultInstall4JUpdateService(UpdateableAppContext context, String version, App app, boolean consoleMode) {
 
 		/* Force loading of I4J so if it doesn't exist we know earlier */

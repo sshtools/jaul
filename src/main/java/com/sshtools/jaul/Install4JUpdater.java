@@ -2,6 +2,8 @@ package com.sshtools.jaul;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -52,9 +54,9 @@ public final class Install4JUpdater implements Callable<String> {
 			return withArgs(args.toArray(new String[0]));
 		}
 		
-		public Install4JUpdaterBuilder withApp(App app) {
+		public Install4JUpdaterBuilder withApp(App app, Phase phase) {
 			return withLauncherId(app.getLauncherId()).
-				   withUpdateUrl(app.getUpdatesUrl());
+				   withUpdateUrl(app.getUpdatesUrl().get().replace("${phase}", phase.name().toLowerCase()));
 		}
 
 		public Install4JUpdaterBuilder withConsoleMode() {
@@ -88,6 +90,7 @@ public final class Install4JUpdater implements Callable<String> {
 			return this;
 		}
 
+		@Deprecated
 		public Install4JUpdaterBuilder withCurrentVersion(String currentVersion) {
 			return withCurrentVersion(Optional.of(currentVersion));
 		}
@@ -174,20 +177,19 @@ public final class Install4JUpdater implements Callable<String> {
 			if (checkOnly) {
 				return availableVersion;
 			} else {
-				String[] args;
+				var args = new ArrayList<String>();
 				if (consoleMode)
-					args = new String[] { "-c" };
-				else
-					args = new String[0];
-				ApplicationLauncher.launchApplicationInProcess(launcherId, args, new ApplicationLauncher.Callback() {
+					args.add("-c");
+				this.args.ifPresent(a -> args.addAll(Arrays.asList(a)));
+				ApplicationLauncher.launchApplicationInProcess(launcherId, args.toArray(new String[0]), new ApplicationLauncher.Callback() {
 					@Override
 					public void exited(int exitValue) {
 						onExit.ifPresent(oe -> oe.accept(exitValue));
-					}
+					} 
 
 					@Override
 					public void prepareShutdown() {
-						// TODO add your code here (not invoked on event dispatch thread)
+						// not invoked on event dispatch thread)
 						onPrepareShutdown.ifPresent(oe -> oe.run());
 					}
 
