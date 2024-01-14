@@ -31,6 +31,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 	
 	protected AbstractUpdateService(UpdateableAppContext context) {
 		this.context = context;
+		rescheduleCheck();
 	}
 
 	@Override

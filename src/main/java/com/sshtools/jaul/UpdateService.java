@@ -60,11 +60,17 @@ public interface UpdateService {
 
 		private final Type type;
 		private final long value;
+		private final String message;
 
-		public DownloadEvent(Type type, long value) {
+		public DownloadEvent(Type type, long value, String message) {
 			super();
 			this.type = type;
 			this.value = value;
+			this.message = message;
+		}
+		
+		public String getMessage() {
+			return message;
 		}
 
 		public Type getType() {
