@@ -48,7 +48,10 @@ public final class Install4JUpdater implements Callable<String> {
 				runnable.run();
 			}
 			finally {
-				System.setProperty("install4j.runtimeDir", was);
+				if(was == null)
+					System.getProperties().remove("install4j.runtimeDir");
+				else
+					System.setProperty("install4j.runtimeDir", was);
 			}
 		}
 		else
