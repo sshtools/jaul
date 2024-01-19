@@ -2,6 +2,9 @@ package com.sshtools.jaul;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -13,6 +16,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.install4j.api.Util;
 import com.install4j.api.context.UserCanceledException;
 import com.install4j.api.launcher.ApplicationLauncher;
 import com.install4j.api.launcher.ApplicationLauncher.Callback;
@@ -23,6 +27,33 @@ import com.install4j.api.update.UpdateDescriptor;
 import com.sshtools.jaul.AppRegistry.App;
 
 public final class Install4JUpdater implements Callable<String> {
+	
+	public interface IORunnable {
+		void run() throws IOException;
+	}
+
+	public static void runWithBestRuntimeDir(IORunnable runnable) throws IOException {
+		if(Util.isWindows()) {
+			runWithRuntimeDir(runnable, Paths.get(".install4j"));
+			return;
+		}
+		runnable.run();
+	}
+
+	public static void runWithRuntimeDir(IORunnable runnable, Path dir) throws IOException {
+		if(Files.exists(dir)) {
+			var was = System.getProperty("install4j.runtimeDir");
+			try {
+				System.setProperty("install4j.runtimeDir", dir.toString());
+				runnable.run();
+			}
+			finally {
+				System.setProperty("install4j.runtimeDir", was);
+			}
+		}
+		else
+			runnable.run();
+	}
 
 	public final static class Install4JUpdaterBuilder {
 
@@ -193,44 +224,46 @@ public final class Install4JUpdater implements Callable<String> {
 				if (consoleMode)
 					args.add("-c");
 				this.args.ifPresent(a -> args.addAll(Arrays.asList(a)));
-				if(inProcess) {				
-					ApplicationLauncher.launchApplicationInProcess(launcherId, args.toArray(new String[0]), new ApplicationLauncher.Callback() {
-						@Override
-						public void exited(int exitValue) {
-							onExit.ifPresent(oe -> oe.accept(exitValue));
-						} 
-	
-						@Override
-						public void prepareShutdown() {
-							// not invoked on event dispatch thread)
-							onPrepareShutdown.ifPresent(oe -> oe.run());
-						}
-	
-						@Override
-						public ProgressListener createProgressListener() {
-							return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
-						}
-					}, ApplicationLauncher.WindowMode.FRAME, null);
-				}
-				else {
-					ApplicationLauncher.launchApplication(launcherId, args.toArray(new String[0]), true, new ApplicationLauncher.Callback() {
-						@Override
-						public void exited(int exitValue) {
-							onExit.ifPresent(oe -> oe.accept(exitValue));
-						} 
-	
-						@Override
-						public void prepareShutdown() {
-							// not invoked on event dispatch thread)
-							onPrepareShutdown.ifPresent(oe -> oe.run());
-						}
-	
-						@Override
-						public ProgressListener createProgressListener() {
-							return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
-						}
-					});
-				}
+				runWithBestRuntimeDir(() -> {
+					if(inProcess) {				
+						ApplicationLauncher.launchApplicationInProcess(launcherId, args.toArray(new String[0]), new ApplicationLauncher.Callback() {
+							@Override
+							public void exited(int exitValue) {
+								onExit.ifPresent(oe -> oe.accept(exitValue));
+							} 
+		
+							@Override
+							public void prepareShutdown() {
+								// not invoked on event dispatch thread)
+								onPrepareShutdown.ifPresent(oe -> oe.run());
+							}
+		
+							@Override
+							public ProgressListener createProgressListener() {
+								return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
+							}
+						}, ApplicationLauncher.WindowMode.FRAME, null);
+					}
+					else {
+						ApplicationLauncher.launchApplication(launcherId, args.toArray(new String[0]), true, new ApplicationLauncher.Callback() {
+							@Override
+							public void exited(int exitValue) {
+								onExit.ifPresent(oe -> oe.accept(exitValue));
+							} 
+		
+							@Override
+							public void prepareShutdown() {
+								// not invoked on event dispatch thread)
+								onPrepareShutdown.ifPresent(oe -> oe.run());
+							}
+		
+							@Override
+							public ProgressListener createProgressListener() {
+								return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
+							}
+						});
+					}
+				});
 			}
 		} catch (UserCanceledException e) {
 			log.info("Cancelled.");
