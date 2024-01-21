@@ -77,7 +77,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 	public final Phase[] getPhases() {
 		return Arrays.asList(Phase.values()).stream()
 				.filter(p -> p != Phase.CONTINUOUS || p == context.getPhase() || p == Phase.getDefaultPhaseForVersion(context.getVersion()) || (p == Phase.CONTINUOUS
-						&& (  ArtifactVersion.isDeveloperWorkspace() || Boolean.getBoolean("jaul.continuous") || Boolean.getBoolean("jadaptive.development"))))
+						&& Phase.isContinuousAllowed()))
 				.collect(Collectors.toList()).toArray(new Phase[0]);
 	}
 

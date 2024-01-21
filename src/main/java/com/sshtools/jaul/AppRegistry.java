@@ -454,6 +454,10 @@ public class AppRegistry {
 		}
 		return appNode;
 	}
+	
+	public static Path getUserData() {
+		return Paths.get(System.getProperty("user.home")).resolve(".jaul");
+	}
 
 	public static Preferences getBestAppPreferences(Optional<App> appDef, Object appInstance) {
 		if (appDef.isPresent()) {

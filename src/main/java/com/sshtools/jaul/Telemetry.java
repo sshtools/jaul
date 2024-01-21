@@ -125,7 +125,7 @@ public final class Telemetry {
 	}
 
 	Path resolvePath() throws IOException {
-		var jaulHome = Paths.get(System.getProperty("user.home")).resolve(".jaul");
+		var jaulHome = AppRegistry.getUserData();
 		Files.createDirectories(jaulHome);
 		var datPath = jaulHome.resolve("telemetry.dat");
 		return datPath;

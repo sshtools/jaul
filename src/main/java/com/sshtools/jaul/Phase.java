@@ -1,7 +1,12 @@
 package com.sshtools.jaul;
 
+import java.nio.file.Files;
+import java.util.prefs.Preferences;
+
 public enum Phase {
 	STABLE, EA, CONTINUOUS;
+	
+	private final static String KEY_CONTINUOUS_ALLOWED = "continuous";
 	
 	public static Phase getDefaultPhaseForVersion(String... versions) {
 		if(versions.length == 0)
@@ -10,5 +15,22 @@ public enum Phase {
 			var appVersion = versions[0];
 			return appVersion == null || appVersion.startsWith("0.") || appVersion.equals("DEV_VERSION") || appVersion.contains("SNAPSHOT") ? Phase.CONTINUOUS : Phase.STABLE;
 		}
+	}
+	
+	public static Phase[] getAvailablePhases() {
+		if(isContinuousAllowed())
+			return Phase.values();
+		else
+			return new Phase[] { Phase.STABLE, Phase.EA };
+	}
+	
+	public static boolean isContinuousAllowed() {
+		 if(Boolean.getBoolean("jaul.noContinuous"))
+			 return false;
+		return ArtifactVersion.isDeveloperWorkspace() || 
+			   Boolean.getBoolean("jaul.continuous") || 
+			   Boolean.getBoolean("jadaptive.development") ||
+		       Preferences.userNodeForPackage(Phase.class).getBoolean(KEY_CONTINUOUS_ALLOWED, false) || 
+		       Files.exists(AppRegistry.getUserData().resolve("continuous"));
 	}
 }
