@@ -221,23 +221,31 @@ public final class Install4JUpdater implements Callable<String> {
 			}
 
 			if (checkOnly) {
+				log.info("Check only complete");
 				return availableVersion;
 			} else {
 				var args = new ArrayList<String>();
 				if (consoleMode)
 					args.add("-c");
 				this.args.ifPresent(a -> args.addAll(Arrays.asList(a)));
+
+				log.info("Updater args ar {}", String.join(" ", args));
+				
 				runWithBestRuntimeDir(() -> {
-					if(inProcess) {				
+					if(inProcess) {	
+						log.info("Using in-process updater.");
+						
 						ApplicationLauncher.launchApplicationInProcess(launcherId, args.toArray(new String[0]), new ApplicationLauncher.Callback() {
 							@Override
 							public void exited(int exitValue) {
+								log.info("Internal updater finished.");
 								onExit.ifPresent(oe -> oe.accept(exitValue));
 							} 
 		
 							@Override
 							public void prepareShutdown() {
 								// not invoked on event dispatch thread)
+								log.info("Internal updater, prep. shutdown.");
 								onPrepareShutdown.ifPresent(oe -> oe.run());
 							}
 		
@@ -248,15 +256,19 @@ public final class Install4JUpdater implements Callable<String> {
 						}, ApplicationLauncher.WindowMode.FRAME, null);
 					}
 					else {
+						log.info("Using external updater.");
+						
 						ApplicationLauncher.launchApplication(launcherId, args.toArray(new String[0]), true, new ApplicationLauncher.Callback() {
 							@Override
 							public void exited(int exitValue) {
+								log.info("External updater finished.");
 								onExit.ifPresent(oe -> oe.accept(exitValue));
 							} 
 		
 							@Override
 							public void prepareShutdown() {
 								// not invoked on event dispatch thread)
+								log.info("External updater, prep. shutdown.");
 								onPrepareShutdown.ifPresent(oe -> oe.run());
 							}
 		
