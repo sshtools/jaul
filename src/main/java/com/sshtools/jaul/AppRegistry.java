@@ -284,8 +284,8 @@ public class AppRegistry {
 			log.debug("Retrieving as user application.");
 			var userRoot = getUserPreferences();
 			for(var userAppId : userRoot.childrenNames()) {
-				var app = new App(Scope.USER, userRoot.node(userAppId));
 				try {
+					var app = new App(Scope.USER, userRoot.node(userAppId));
 					if(installDir.toRealPath().equals(app.getDir().toRealPath())) {
 						return app;
 					}
@@ -298,8 +298,8 @@ public class AppRegistry {
 			log.debug("Retrieving as system application.");
 			var sysRoot = getSystemPreferences();
 			for(var systemAppId : sysRoot.childrenNames()) {
-				var app = new App(Scope.SYSTEM, sysRoot.node(systemAppId));
 				try {
+					var app = new App(Scope.SYSTEM, sysRoot.node(systemAppId));
 					if(installDir.toRealPath().equals(app.getDir().toRealPath())) {
 						return app;
 					}
