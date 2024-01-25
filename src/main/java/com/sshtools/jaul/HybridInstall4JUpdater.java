@@ -147,6 +147,7 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 			if (response.statusCode() == 200) {
 
 				var sz = response.headers().firstValueAsLong("Content-Length").orElse(0);
+				var started = System.currentTimeMillis();
 
 				listener.ifPresent(l -> l.indeterminateProgress(sz > 0));
 				listener.ifPresent(l -> l.statusMessage(MessageFormat.format("Downloading {0}", fn)));
@@ -156,12 +157,10 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 						int r;
 						long t = 0;
 						while ((r = in.read(buf)) != -1) {
-
-							/* TODO detail message with bytes downloaded, ETA etc */
-							
 							out.write(buf, 0, r);
 							t += r;
 							if (sz > 0 && listener.isPresent()) {
+								listener.get().detailMessage(report(t, sz, started));
 								listener.get().percentCompleted((int) (((double) t / (double) sz) * (double) 100));
 							}
 						}
@@ -228,4 +227,50 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 	}
 
 
+	private  synchronized String report(long totalSoFar, long length, long started) {
+
+		boolean isDone = false;
+		if(totalSoFar > 0) {
+
+			var percentage = ((double) totalSoFar / (double)length) * 100;
+			var percentageStr = String.format("%.0f%%", percentage);
+
+			var humanBytes = toByteSize(totalSoFar);
+
+			var time = (System.currentTimeMillis() - started);
+
+			var megabytesPerSecond = (totalSoFar / time) / 1024D;
+			var transferRate = String.format("%.1fMB/s", megabytesPerSecond);
+
+			var remaining = (length - totalSoFar);
+			var perSecond = (long) (megabytesPerSecond * 1024);
+			var seconds = (remaining / perSecond) / 1000l;
+
+			return String.format("%4s %8s %10s %5d:%02d",
+					percentageStr, humanBytes, transferRate,
+					(int) (seconds > 60 ? seconds / 60 : 0),
+					(int) (seconds % 60));
+		}
+		return "";
+	}
+
+	static String toByteSize(double t) {
+		return toByteSize(t, 2);
+	}
+
+	static String toByteSize(double t, int decimalPlaces) {
+		
+		if(decimalPlaces < 0) {
+			throw new IllegalArgumentException("Number of decimal places must be > 0");
+		}
+		String[] sizes = { "B", "KB", "MB", "GB", "TB", "PB" };
+		int idx = 0;
+		double x = t;
+		while(x / 1000 >= 1) {
+			idx++;
+			x = (x / 1000);
+		}
+		
+		return String.format("%." + decimalPlaces + "f%s", x, sizes[idx]);
+	}
 }

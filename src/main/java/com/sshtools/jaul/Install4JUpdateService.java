@@ -59,6 +59,7 @@ public class Install4JUpdateService extends AbstractUpdateService {
 		return new ProgressListener() {
 			
 			private String message;
+			private String detail;
 			private int percent = -1;
 
 			@Override
@@ -71,22 +72,26 @@ public class Install4JUpdateService extends AbstractUpdateService {
 
 			@Override
 			public void statusMessage(String message) {
-				log.info("Update Stateu: {}", message);
+				if(!Objects.equals(this.message, message)) {
+					log.info("Update Message: {}", message);
+					this.message = message;
+					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message, detail));
+				}
 			}
 
 			@Override
-			public void detailMessage(String message) {
-				if(!Objects.equals(this.message, message)) {
-					log.info("Update Detail: {}", message);
-					this.message = message;
-					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message));
+			public void detailMessage(String detail) {
+				if(!Objects.equals(this.detail, detail)) {
+					log.info("Update Detail: {}", detail);
+					this.detail = detail;
+					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message, detail));
 				}
 			}
 
 			@Override
 			public void percentCompleted(int value) {
 				percent = value;
-				fireDownload(new DownloadEvent(Type.PROGRESS, percent, message));
+				fireDownload(new DownloadEvent(Type.PROGRESS, percent, message, detail));
 			}
 
 			@Override
@@ -97,11 +102,11 @@ public class Install4JUpdateService extends AbstractUpdateService {
 			public void indeterminateProgress(boolean indeterminateProgress) {
 				if(indeterminateProgress && percent != -1) {
 					percent = -1;
-					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message));
+					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message, detail));
 				}
 				else if(!indeterminateProgress && percent == -1) {
 					percent = 0;
-					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message));
+					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message, detail));
 				}
 			}}
 		;
