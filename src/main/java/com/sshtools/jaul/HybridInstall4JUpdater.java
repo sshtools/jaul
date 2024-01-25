@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -77,26 +78,37 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 			throws IOException, InterruptedException {
 		var args = new ArrayList<String>();
 		args.add(exec.toString());
-		if (unattended) {
-			args.add("-q");
-			args.add("-wait");
-			args.add("20");
-			if(consoleMode) {
-				args.add("-c");
-			}
-		} 
+		this.args.ifPresent(a -> args.addAll(Arrays.asList(a)));
 
-		if(consoleMode) {
+		if(consoleMode && !args.contains("-c")) {
 			args.add("-c");
 		}
 		
+		if (unattended) {
+			if(!args.contains("-q"))
+				args.add("-q");
+			if(!args.contains("-wait")) {
+				args.add("-wait");
+				args.add("20");
+			}
+			if(consoleMode && !args.contains("-c")) {
+				args.add("-c");
+			}
+		} 
+		
 		if (installDir.isPresent()) {
 			/* Having an install dir means this is actually an upgrade */
-			args.add("-dir");
-			args.add(installDir.get().toString());
+			if(!args.contains("-dir")) {
+				args.add("-dir");
+				args.add(installDir.get().toString());
+			}
 			if (unattended) {
-				args.add("-alerts");
-				args.add("-splash");
+				if(!args.contains("-alerts")) {
+					args.add("-alerts");
+				}
+				if(!args.contains("-splash")) {
+					args.add("-splash");
+				}
 				args.add("Installing");
 			}
 		}
@@ -128,23 +140,26 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 			var request = HttpRequest.newBuilder().uri(best.getURL().toURI()).timeout(Duration.ofMinutes(2)).GET()
 					.build();
 
-			listener.ifPresent(l -> l.statusMessage(MessageFormat.format("Locating {}", fn)));
-			listener.ifPresent(l -> l.detailMessage(best.getURL().toString()));
+			listener.ifPresent(l -> l.statusMessage(MessageFormat.format("Locating {0}", fn)));
+//			listener.ifPresent(l -> l.detailMessage(best.getURL().toString()));
 
 			var response = client.send(request, BodyHandlers.ofInputStream());
 
 			if (response.statusCode() == 200) {
 
-				var sz = response.headers().firstValueAsLong("Content-Size").orElse(0);
+				var sz = response.headers().firstValueAsLong("Content-Length").orElse(0);
 
 				listener.ifPresent(l -> l.indeterminateProgress(sz > 0));
-				listener.ifPresent(l -> l.statusMessage(MessageFormat.format("Downloading {}", fn)));
+				listener.ifPresent(l -> l.statusMessage(MessageFormat.format("Downloading {0}", fn)));
 				try (var out = Files.newOutputStream(outFile)) {
 					try (var in = response.body()) {
 						var buf = new byte[65536];
 						int r;
 						long t = 0;
 						while ((r = in.read(buf)) != -1) {
+
+							/* TODO detail message with bytes downloaded, ETA etc */
+							
 							out.write(buf, 0, r);
 							t += r;
 							if (sz > 0 && listener.isPresent()) {
@@ -155,7 +170,7 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 						in.transferTo(out);
 					}
 				}
-				listener.ifPresent(l -> l.statusMessage(MessageFormat.format("Completed downloading {}", fn)));
+				listener.ifPresent(l -> l.statusMessage(MessageFormat.format("Completed downloading {0}", fn)));
 
 			} else {
 				throw new IOException("Unexpected response code for " + best.getURL() + ". " + response.statusCode());
