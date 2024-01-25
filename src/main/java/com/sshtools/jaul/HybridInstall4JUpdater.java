@@ -87,10 +87,10 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 		if (unattended) {
 			if(!args.contains("-q"))
 				args.add("-q");
-			if(!args.contains("-wait")) {
-				args.add("-wait");
-				args.add("20");
-			}
+//			if(!args.contains("-wait")) {
+//				args.add("-wait");
+//				args.add("20");
+//			}
 			if(consoleMode && !args.contains("-c")) {
 				args.add("-c");
 			}
