@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import com.install4j.api.launcher.ApplicationLauncher;
 import com.install4j.api.launcher.ApplicationLauncher.ProgressListener;
 import com.sshtools.jaul.AppRegistry.App;
+import com.sshtools.jaul.Install4JUpdater.AbstractInstall4JUpdaterBuilder;
 import com.sshtools.jaul.Install4JUpdater.Install4JUpdaterBuilder;
 import com.sshtools.jaul.UpdateService.DownloadEvent.Type;
 
@@ -46,9 +47,9 @@ public class Install4JUpdateService extends AbstractUpdateService {
 
 	static Logger log = LoggerFactory.getLogger(Install4JUpdateService.class);
 	
-	private final Supplier<Install4JUpdaterBuilder> builderFactory;
+	private final Supplier<? extends AbstractInstall4JUpdaterBuilder<?, ?>> builderFactory;
 
-	public Install4JUpdateService(UpdateableAppContext context, Supplier<Install4JUpdaterBuilder> builderFactory) {
+	public Install4JUpdateService(UpdateableAppContext context, Supplier<? extends AbstractInstall4JUpdaterBuilder<?, ?>> builderFactory) {
 		super(context);
 		this.builderFactory = builderFactory;
 	}
