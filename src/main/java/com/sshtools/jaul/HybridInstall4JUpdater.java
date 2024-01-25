@@ -13,7 +13,6 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -78,23 +77,23 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 			throws IOException, InterruptedException {
 		var args = new ArrayList<String>();
 		args.add(exec.toString());
-		this.args.ifPresent(a -> args.addAll(Arrays.asList(a)));
+		
+		if (unattended) {
+			if(!args.contains("-q")) {
+				args.add("-q");
+			}
+		}
 
 		if(consoleMode && !args.contains("-c")) {
 			args.add("-c");
 		}
 		
-		if (unattended) {
-			if(!args.contains("-q"))
-				args.add("-q");
-//			if(!args.contains("-wait")) {
-//				args.add("-wait");
-//				args.add("20");
-//			}
-			if(consoleMode && !args.contains("-c")) {
-				args.add("-c");
+		this.args.ifPresent(argsl -> {
+			for(var arg : argsl) {
+				if(!args.contains(arg))
+					args.add(arg);
 			}
-		} 
+		});
 		
 		if (installDir.isPresent()) {
 			/* Having an install dir means this is actually an upgrade */
