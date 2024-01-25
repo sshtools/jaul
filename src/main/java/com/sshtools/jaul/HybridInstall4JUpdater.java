@@ -197,7 +197,7 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 				} finally {
 					listener.ifPresent(l -> l.statusMessage("Unmounting archive"));
 					Thread.sleep(1000);
-					ret = 					new ProcessBuilder("hdiutil", "eject", volPath).redirectError(Redirect.INHERIT)
+					new ProcessBuilder("hdiutil", "eject", volPath).redirectError(Redirect.INHERIT)
 							.redirectInput(Redirect.INHERIT).redirectOutput(Redirect.INHERIT).start().waitFor();
 				}
 			} else {
