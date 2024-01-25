@@ -102,7 +102,7 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 				args.add("-dir");
 				args.add(installDir.get().toString());
 			}
-			if (unattended) {
+			if (unattended && !consoleMode) {
 				if(!args.contains("-alerts")) {
 					args.add("-alerts");
 				}

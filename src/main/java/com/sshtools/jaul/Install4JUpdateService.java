@@ -1,6 +1,7 @@
 package com.sshtools.jaul;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -70,12 +71,16 @@ public class Install4JUpdateService extends AbstractUpdateService {
 
 			@Override
 			public void statusMessage(String message) {
+				log.info("Update Stateu: {}", message);
 			}
 
 			@Override
 			public void detailMessage(String message) {
-				this.message = message;
-				fireDownload(new DownloadEvent(Type.PROGRESS, percent, message));
+				if(!Objects.equals(this.message, message)) {
+					log.info("Update Detail: {}", message);
+					this.message = message;
+					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message));
+				}
 			}
 
 			@Override
