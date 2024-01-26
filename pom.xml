@@ -218,9 +218,6 @@
 								<goals>
 									<goal>sign</goal>
 								</goals>
-								<configuration>
-									<useAgent>false</useAgent>
-								</configuration>
 							</execution>
 						</executions>
 					</plugin>
