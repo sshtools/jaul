@@ -82,7 +82,10 @@ public class Install4JUpdateService extends AbstractUpdateService {
 			@Override
 			public void detailMessage(String detail) {
 				if(!Objects.equals(this.detail, detail)) {
-					log.info("Update Detail: {}", detail);
+					
+					if(log.isDebugEnabled())
+						log.debug("Update Detail: {}", detail);
+					
 					this.detail = detail;
 					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message, detail));
 				}
