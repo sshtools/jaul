@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Function;
@@ -123,7 +125,17 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 	@Override
 	protected void downloadAndExecuteUpdater(UpdateDescriptorEntry best) throws IOException {
 		var downloads = AppRegistry.getUserData().resolve("downloads");
-		if (!Files.exists(downloads)) {
+		if (Files.exists(downloads)) {
+			var maxAge = Instant.now().minus(2, ChronoUnit.DAYS);
+			try(var str = Files.newDirectoryStream(downloads)) {
+				for(var file : str) {
+					if(Files.getLastModifiedTime(file).toInstant().isBefore(maxAge)) {
+						Files.delete(file);
+					}
+				}
+			}
+		}
+		else {
 			Files.createDirectories(downloads);
 		}
 
