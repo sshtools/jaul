@@ -8,10 +8,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -53,7 +53,7 @@ public class UpdateDescriptor {
 			case LINUX:
 				return ".*-linux-.*\\.sh|.*-linux-.*\\.zip|.*-linux-.*\\.tgz|.*-windows-.*\\.tar\\.gz|.*\\.rpm|.*\\.deb";
 			case WINDOWS:
-				return ".*\\.exe|.*-windows-.*\\.zip|.*-windows-.*\\.tgz|.*-windows-.*\\.tar\\.gz";
+				return ".*\\.msi|.*\\.exe|.*-windows-.*\\.zip|.*-windows-.*\\.tgz|.*-windows-.*\\.tar\\.gz";
 			case MACOS:
 				return ".*\\.dmg|.*-mac-.*\\.zip|.*-macos-.*\\.tgz|.*-macos-.*\\.tar\\.gz|.*-mac-.*\\.zip|.*-macos-.*\\.tgz|.*-macos-.*\\.tar\\.gz";
 			default:
@@ -82,7 +82,7 @@ public class UpdateDescriptor {
 			case X86:
 				return ".*-x86-.*";
 			case X86_64:
-				return ".*-(amd64|x8664|x86_64|x86-64)-.*";
+				return ".*-(x64|amd64|x8664|x86_64|x86-64)-.*";
 			case AARCH64:
 				return ".*-(aarch64|arm64)-.*";
 			case ARM32:
@@ -169,18 +169,25 @@ public class UpdateDescriptor {
 		private final MediaOS os;
 		private final MediaArch arch;
 		private final MediaType type;
+		private final String variant;
 
-		public MediaKey(MediaOS os, MediaArch arch, MediaType type) {
+		public MediaKey(MediaOS os, MediaArch arch, MediaType type, String variant) {
 			super();
 			this.os = os;
+			this.variant = variant;
 			this.arch = arch;
 			this.type = type;
 		}
 
-
 		@Override
 		public int hashCode() {
-			return Objects.hash(arch, os, type);
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((arch == null) ? 0 : arch.hashCode());
+			result = prime * result + ((os == null) ? 0 : os.hashCode());
+			result = prime * result + ((type == null) ? 0 : type.hashCode());
+			result = prime * result + ((variant == null) ? 0 : variant.hashCode());
+			return result;
 		}
 
 		@Override
@@ -192,12 +199,26 @@ public class UpdateDescriptor {
 			if (getClass() != obj.getClass())
 				return false;
 			MediaKey other = (MediaKey) obj;
-			return arch == other.arch && os == other.os && type == other.type;
+			if (arch != other.arch)
+				return false;
+			if (os != other.os)
+				return false;
+			if (type != other.type)
+				return false;
+			if (variant == null) {
+				if (other.variant != null)
+					return false;
+			} else if (!variant.equals(other.variant))
+				return false;
+			return true;
 		}
 
+		public String variant() {
+			return variant;
+		}
 
 		public static MediaKey get() {
-			return new MediaKey(MediaOS.get(), MediaArch.get(), MediaType.INSTALLER);
+			return new MediaKey(MediaOS.get(), MediaArch.get(), MediaType.INSTALLER, null);
 		}
 
 		public MediaArch arch() {
@@ -210,7 +231,7 @@ public class UpdateDescriptor {
 
 		@Override
 		public String toString() {
-			return "MediaKey [os=" + os + ", arch=" + arch + ", type=" + type + "]";
+			return "MediaKey [os=" + os + ", arch=" + arch + ", type=" + type + ", variant=" + variant + "]";
 		}
 
 		public MediaType type() {
@@ -219,7 +240,27 @@ public class UpdateDescriptor {
 
 	}
 
-	private final Map<MediaKey, Media> mediaUrls = new HashMap<>();
+	private final Map<MediaKey, Media> mediaUrls = new TreeMap<>((o1, o2) -> {
+		var cmp = o1.os().compareTo(o2.os());
+		if(cmp == 0) {
+			cmp = o1.arch().compareTo(o2.arch());
+			if(cmp == 0) {
+				cmp = o1.type().compareTo(o2.type());
+				if(cmp == 0) {
+					return Objects.compare(o1.variant(), o2.variant(), (v1, v2) -> v1.compareTo(v2));
+				}
+				else {
+					return cmp;
+				}
+			}
+			else {
+				return cmp;
+			}	
+		}
+		else {
+			return cmp;
+		}
+	});
 	
 	public static UpdateDescriptor get(URI uri) throws IOException {
 		try {
@@ -247,7 +288,7 @@ public class UpdateDescriptor {
 			var ud = doc.getDocumentElement();
 			var mediaBaseUrl = ud.getAttributes().getNamedItem("baseUrl").getTextContent();
 			var entries = doc.getDocumentElement().getElementsByTagName("entry");
-
+			
 			for (int i = 0; i < entries.getLength(); i++) {
 				var el = entries.item(i);
 
@@ -258,9 +299,14 @@ public class UpdateDescriptor {
 				var fileName = el.getAttributes().getNamedItem("fileName").getTextContent();
 				var bundledJre = el.getAttributes().getNamedItem("bundledJre").getTextContent();
 				
-				if(fileName.contains("jenkins-agent-macos-0_0_1-16.dmg")) {
-					System.out.println("brk!");
+				var idx = fileName.lastIndexOf('.');
+				var variant = fileName.substring(idx + 1);
+				if(variant.equals("gz") || variant.equals("bz")) {
+					idx = fileName.lastIndexOf('.', idx - 1);
+					if(idx != -1)
+						variant = fileName.substring(idx + 1);
 				}
+				
 				
 				MediaType mediaType = null;
 				for (var type : MediaType.values()) {
@@ -297,17 +343,19 @@ public class UpdateDescriptor {
 					}
 				}
 
-				var mediaKey = new MediaKey(mediaOs, mediaArch, mediaType);
+				var mediaKey = new MediaKey(mediaOs, mediaArch, mediaType, variant);
 				var media = new Media(mediaKey, fileName, new URL(new URL(mediaBaseUrl), fileName), fileSize, md5Sum,
 						sha256Sum, version);
 				mediaUrls.put(mediaKey, media);
-
+				
 			}
+			
 
 		} catch (ParserConfigurationException | SAXException e) {
 			throw new IOException("Failed to load remote descriptor.", e);
 		}
 	}
+	
 
 	public final Map<MediaKey, Media> getMediaUrls() {
 		return mediaUrls;
@@ -317,7 +365,7 @@ public class UpdateDescriptor {
 		var key = MediaKey.get();
 		var media = getMediaUrls().get(key);
 		if(media == null && key.arch() != MediaArch.XPLATFORM) {
-			key = new MediaKey(key.os(), MediaArch.XPLATFORM, key.type());
+			key = new MediaKey(key.os(), MediaArch.XPLATFORM, key.type(), null);
 			media = getMediaUrls().get(key);
 		}
 		return Optional.ofNullable(media);
