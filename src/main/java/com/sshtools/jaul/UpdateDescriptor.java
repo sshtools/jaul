@@ -44,7 +44,7 @@ public class UpdateDescriptor {
 			}
 		}
 	}
-	
+
 	public enum MediaOS {
 		LINUX, WINDOWS, MACOS, UNIX;
 
@@ -242,26 +242,34 @@ public class UpdateDescriptor {
 
 	private final Map<MediaKey, Media> mediaUrls = new TreeMap<>((o1, o2) -> {
 		var cmp = o1.os().compareTo(o2.os());
-		if(cmp == 0) {
+		if (cmp == 0) {
 			cmp = o1.arch().compareTo(o2.arch());
-			if(cmp == 0) {
+			if (cmp == 0) {
 				cmp = o1.type().compareTo(o2.type());
-				if(cmp == 0) {
-					return Objects.compare(o1.variant(), o2.variant(), (v1, v2) -> v1.compareTo(v2));
-				}
-				else {
+				if (cmp == 0) {
+					return Objects.compare(o1.variant(), o2.variant(), (v1, v2) -> {
+						if (v1 == null) {
+							if (v2 == null)
+								return 0;
+							else
+								return -1;
+						} else if (v2 == null) {
+							return 1;
+						} else {
+							return v1.compareTo(v2);
+						}
+					});
+				} else {
 					return cmp;
 				}
-			}
-			else {
+			} else {
 				return cmp;
-			}	
-		}
-		else {
+			}
+		} else {
 			return cmp;
 		}
 	});
-	
+
 	public static UpdateDescriptor get(URI uri) throws IOException {
 		try {
 			var client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build();
@@ -288,7 +296,7 @@ public class UpdateDescriptor {
 			var ud = doc.getDocumentElement();
 			var mediaBaseUrl = ud.getAttributes().getNamedItem("baseUrl").getTextContent();
 			var entries = doc.getDocumentElement().getElementsByTagName("entry");
-			
+
 			for (int i = 0; i < entries.getLength(); i++) {
 				var el = entries.item(i);
 
@@ -298,16 +306,15 @@ public class UpdateDescriptor {
 				var sha256Sum = getAttrVal(el, "sha256Sum");
 				var fileName = el.getAttributes().getNamedItem("fileName").getTextContent();
 				var bundledJre = el.getAttributes().getNamedItem("bundledJre").getTextContent();
-				
+
 				var idx = fileName.lastIndexOf('.');
 				var variant = fileName.substring(idx + 1);
-				if(variant.equals("gz") || variant.equals("bz")) {
+				if (variant.equals("gz") || variant.equals("bz")) {
 					idx = fileName.lastIndexOf('.', idx - 1);
-					if(idx != -1)
+					if (idx != -1)
 						variant = fileName.substring(idx + 1);
 				}
-				
-				
+
 				MediaType mediaType = null;
 				for (var type : MediaType.values()) {
 					if (fileName.matches(type.pattern())) {
@@ -315,7 +322,7 @@ public class UpdateDescriptor {
 						break;
 					}
 				}
-				if(mediaType == null) {
+				if (mediaType == null) {
 					log.warn("Skipping {} in descriptor, it doesn't match any media type.", fileName);
 					continue;
 				}
@@ -327,11 +334,11 @@ public class UpdateDescriptor {
 						break;
 					}
 				}
-				if(mediaOs == null) {
+				if (mediaOs == null) {
 					log.warn("Skipping {} in descriptor, it doesn't match any OS.", fileName);
 					continue;
 				}
-				
+
 				var mediaArch = MediaArch.XPLATFORM;
 				for (var arch : MediaArch.values()) {
 					if (fileName.matches(arch.pattern())) {
@@ -347,24 +354,42 @@ public class UpdateDescriptor {
 				var media = new Media(mediaKey, fileName, new URL(new URL(mediaBaseUrl), fileName), fileSize, md5Sum,
 						sha256Sum, version);
 				mediaUrls.put(mediaKey, media);
-				
+
 			}
-			
 
 		} catch (ParserConfigurationException | SAXException e) {
 			throw new IOException("Failed to load remote descriptor.", e);
 		}
 	}
-	
 
 	public final Map<MediaKey, Media> getMediaUrls() {
 		return mediaUrls;
+	}
+	
+	public Optional<Media> find(MediaKey key) {
+		var media = mediaUrls.get(key);
+		if(media == null) {
+			if(key.variant == null) {
+				for(var en : mediaUrls.entrySet()) {
+					if(Objects.equals(en.getKey().os, key.os) &&
+							Objects.equals(en.getKey().arch, key.arch) &&
+							Objects.equals(en.getKey().type, key.type)) {
+						return Optional.of(en.getValue());
+					}
+				}
+			}
+			return Optional.empty();
+		}
+		else {
+			return Optional.of(media);
+		}
+		
 	}
 
 	public final Optional<Media> getMedia() {
 		var key = MediaKey.get();
 		var media = getMediaUrls().get(key);
-		if(media == null && key.arch() != MediaArch.XPLATFORM) {
+		if (media == null && key.arch() != MediaArch.XPLATFORM) {
 			key = new MediaKey(key.os(), MediaArch.XPLATFORM, key.type(), null);
 			media = getMediaUrls().get(key);
 		}
