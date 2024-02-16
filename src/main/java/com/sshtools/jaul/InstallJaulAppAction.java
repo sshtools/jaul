@@ -13,10 +13,12 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import com.install4j.api.Util;
 import com.install4j.api.actions.AbstractInstallAction;
 import com.install4j.api.context.InstallerContext;
+import com.install4j.api.context.ProgressInterface;
 import com.install4j.api.context.RemoteCallable;
 import com.install4j.api.context.UserCanceledException;
 import com.sshtools.jaul.UpdateDescriptor.MediaKey;
@@ -24,70 +26,125 @@ import com.sshtools.jaul.UpdateDescriptor.MediaKey;
 @SuppressWarnings("serial")
 public class InstallJaulAppAction extends AbstractInstallAction {
 
+	private static final class CallInstall implements RemoteCallable {
+		private final ProgressInterface prg;
+		private String urlText;
+		private String installPath;
+		private boolean unattended;
+		
+		public CallInstall() {
+			prg = null;
+		}
+
+		private CallInstall(ProgressInterface prg, String urlText, String installPath, boolean unattended) {
+			this.prg = prg;
+			this.urlText = urlText;
+			this.installPath = installPath;
+			this.unattended = unattended;
+		}
+
+		@Override
+		public Serializable execute() {
+			try {
+				installApp( installPath, unattended, prg, urlText);
+			} catch (IOException | InterruptedException e) {
+				throw new IllegalStateException("Failed elevated action.", e);
+			}
+			return "";
+		}
+	}
+
 	private String updatesXmlLocation;
+	private String jaulAppId;
 	private File installDir;
 	private boolean unattended = true;
+	private com.install4j.runtime.installer.helper.Logger log = com.install4j.runtime.installer.helper.Logger
+			.getInstance();
 
 	@Override
 	public boolean install(InstallerContext context) throws UserCanceledException {
 		try {
+			/* First try to see if the app is already installed, and get what version
+			 * it is at if it is.
+			 */
+			Optional<String> installedVersion = Optional.empty();
+			
+			try {
+				var app= AppRegistry.get().get(jaulAppId);
+				var appDef  = new LocalAppDef(app);
+				log.info(this, MessageFormat.format("{} is installed, version {}.", jaulAppId, appDef.getVersion()));
+				installedVersion = Optional.of(appDef.getVersion());
+			}
+			catch(IllegalArgumentException iae) {
+				/* Not installed */
+				log.info(this, MessageFormat.format("{} is not installed, will try to download.", jaulAppId));
+			}
+			
 			var desc = UpdateDescriptor.get(URI.create(updatesXmlLocation));
 			var key = MediaKey.get();
 			var mediaOr = desc.find(key);
 			if(mediaOr.isPresent()) {
 				var media = mediaOr.get();
-				var url = media.url();
-				context.runElevated(new RemoteCallable() {
-					@Override
-					public Serializable execute() {
-						try {
-							installApp(context, installDir, unattended, url);
-						} catch (IOException | InterruptedException e) {
-							throw new IllegalStateException("Failed elevated action.", e);
-						}
-						return "";
+				if(installedVersion.isEmpty() || !installedVersion.get().equals(media.version())) {
+					var url = media.url();
+					if(Util.hasFullAdminRights()) {
+						context.runUnelevated(new CallInstall(context.getProgressInterface(), url.toExternalForm(), installDir.getAbsolutePath().toString(), unattended));
 					}
-				}, true);
+					else {
+						context.runElevated(new CallInstall(null, url.toExternalForm(), installDir.getAbsolutePath().toString(), unattended), true);
+					}
+				}
+				else {
+					log.error(this, MessageFormat.format("Available version {0} is same as installed {1}, ignoring.", key, installedVersion.orElse("<none>"), media.version()));
+				}
 				return true;
 			}
 			else {
 				throw new IOException(MessageFormat.format("Did not find any media for {0}", key));
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error(this, e.getMessage());
 			context.getProgressInterface().showFailure("Failed to install companion application. " + e.getMessage());
 		}
 		return false;
 	}
 
-	private static void installApp(InstallerContext context, File installDir, boolean unattended, URL url)
+	private static void installApp(String installDirPath, boolean unattended, ProgressInterface progress, String urlText)
 			throws IOException, FileNotFoundException, InterruptedException {
+		var url = new URL(urlText);
+		var installDir = new File(installDirPath);
 		var filename = url.getPath();
 		var idx = filename.lastIndexOf('/');
 		if (idx != -1) {
 			filename = filename.substring(idx + 1);
 		}
-		var outFile = new File(context.getInstallationDirectory(), filename);
-		
+		var outFile = new File(installDir, filename);
+
 		/* Download the installer file */
+		var inConx = url.openConnection();
+		var sz = inConx.getContentLength();
+		if(outFile.exists() && outFile.length() == sz) {
+			return;
+		}
 		try (var out = new FileOutputStream(outFile)) {
-			var inConx = url.openConnection();
-			var inStream = inConx.getInputStream();
-			var buf = new byte[65536];
-			var sz = inConx.getContentLength();
-			context.getProgressInterface().setStatusMessage("Downloading " + filename);
-			try (var in = inStream) {
-				int r;
-				int t = 0;
-				while ((r = in.read(buf)) != -1) {
-					out.write(buf, 0, r);
-					t += r;
-					context.getProgressInterface().setPercentCompleted((int) (((double) t / (double) sz) * 100.0));
+			try(var inStream = inConx.getInputStream()) {
+				var buf = new byte[65536];
+				if(progress != null)
+					progress.setStatusMessage("Downloading " + filename);
+				try (var in = inStream) {
+					int r;
+					int t = 0;
+					while ((r = in.read(buf)) != -1) {
+						out.write(buf, 0, r);
+						t += r;
+						if(progress != null)
+							progress.setPercentCompleted((int) (((double) t / (double) sz) * 100.0));
+					}
+					in.transferTo(out);
 				}
-				in.transferTo(out);
 			}
 		}
-		
+
 		outFile.setExecutable(true, false);
 
 		if (Util.isMacOS()) {
@@ -96,7 +153,9 @@ public class InstallJaulAppAction extends AbstractInstallAction {
 			var volPath = "/Volumes/" + volId;
 			var exec = outFile.toString();
 			try {
-				context.getProgressInterface().setStatusMessage("Mounting archive");
+				if(progress != null) {
+					progress.setStatusMessage("Mounting archive");
+				}
 				var p = new ProcessBuilder("hdiutil", "mount", "-mountpoint", volPath, exec)
 						.redirectError(Redirect.INHERIT).redirectInput(Redirect.INHERIT)
 						.redirectOutput(Redirect.INHERIT).start();
@@ -104,23 +163,37 @@ public class InstallJaulAppAction extends AbstractInstallAction {
 					throw new IOException("Installer exited with error code " + p.exitValue());
 				}
 
-				context.getProgressInterface().setStatusMessage("Executing installer");
+				if(progress != null) {
+					progress.setStatusMessage("Executing installer");
+				}
 				var dir = new File(volPath).listFiles((f) -> !f.isHidden());
 				if (dir == null || dir.length == 0)
 					throw new IOException("No installer found in volume " + volPath);
 
 				var inst = new File(new File(new File(dir[0], "Contents"), "MacOS"), "JavaApplicationStub");
-				runInstallerExecutable(inst, installDir, unattended, context);
+				runInstallerExecutable(inst, installDir, unattended, progress);
 			} finally {
-				context.getProgressInterface().setStatusMessage("Unmounting archive");
+				if(progress != null) {
+					progress.setStatusMessage("Unmounting archive");
+				}
 				sleep(1000);
 				new ProcessBuilder("hdiutil", "eject", volPath).redirectError(Redirect.INHERIT)
 						.redirectInput(Redirect.INHERIT).redirectOutput(Redirect.INHERIT).start().waitFor();
 			}
 		} else {
-			context.getProgressInterface().setStatusMessage("Executing installer");
-			runInstallerExecutable(outFile, installDir, unattended, context);
+			if(progress != null) {
+				progress.setStatusMessage("Executing installer");
+			}
+			runInstallerExecutable(outFile, installDir, unattended, progress);
 		}
+	}
+
+	public String getJaulAppId() {
+		return jaulAppId;
+	}
+
+	public void setJaulAppId(String jaulAppId) {
+		this.jaulAppId = jaulAppId;
 	}
 
 	public File getInstallDir() {
@@ -147,7 +220,8 @@ public class InstallJaulAppAction extends AbstractInstallAction {
 		this.updatesXmlLocation = updatesXmlLocation;
 	}
 
-	private static void runInstallerExecutable(File exec, File installDir, boolean unattended, InstallerContext context) throws IOException, InterruptedException {
+	private static void runInstallerExecutable(File exec, File installDir, boolean unattended, ProgressInterface progress)
+			throws IOException, InterruptedException {
 		var args = new ArrayList<String>();
 		args.add(exec.toString());
 		if (unattended) {
@@ -168,7 +242,8 @@ public class InstallJaulAppAction extends AbstractInstallAction {
 			}
 		}
 		addStandardInstall4JArguments(args);
-		context.getProgressInterface().setStatusMessage("Running companion installer");
+		if(progress != null)
+			progress.setStatusMessage("Running companion installer");
 		var p = new ProcessBuilder(args).redirectError(Redirect.INHERIT).redirectInput(Redirect.INHERIT)
 				.redirectOutput(Redirect.INHERIT).start();
 		if (p.waitFor() != 0) {
