@@ -259,6 +259,7 @@ public class Install4JUpdater implements Callable<String> {
 		if (consoleMode)
 			args.add("-c");
 		this.args.ifPresent(a -> args.addAll(Arrays.asList(a)));
+		args.add("-VupdatesUrl=" + uurl);		
 
 		log.info("Updater args are {}", String.join(" ", args));
 		
