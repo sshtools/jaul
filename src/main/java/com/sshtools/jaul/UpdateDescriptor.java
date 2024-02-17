@@ -388,12 +388,12 @@ public class UpdateDescriptor {
 
 	public final Optional<Media> getMedia() {
 		var key = MediaKey.get();
-		var media = getMediaUrls().get(key);
-		if (media == null && key.arch() != MediaArch.XPLATFORM) {
+		var media = find(key);
+		if (media.isEmpty() && key.arch() != MediaArch.XPLATFORM) {
 			key = new MediaKey(key.os(), MediaArch.XPLATFORM, key.type(), null);
-			media = getMediaUrls().get(key);
+			media = find(key);
 		}
-		return Optional.ofNullable(media);
+		return media;
 	}
 
 	private String getAttrVal(Node el, String name) {
