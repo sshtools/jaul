@@ -36,7 +36,6 @@ public class InstallJaulAppAction extends AbstractInstallAction {
 				installedVersion = Optional.of(appDef.getVersion());
 			}
 			catch(IllegalStateException iae) {
-				iae.printStackTrace();
 				/* Not installed */
 				com.install4j.runtime.installer.helper.Logger
 				.getInstance().info(this, MessageFormat.format("{0} is not installed, will try to download.", jaulAppId));
@@ -66,7 +65,6 @@ public class InstallJaulAppAction extends AbstractInstallAction {
 				throw new IOException(MessageFormat.format("Did not find any media for {0}", key));
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			com.install4j.runtime.installer.helper.Logger
 			.getInstance().error(this, e.getMessage());
 			context.getProgressInterface().showFailure(MessageFormat.format("Failed to install companion application. {0}", e.getMessage()));
