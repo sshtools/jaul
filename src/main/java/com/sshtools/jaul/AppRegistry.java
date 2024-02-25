@@ -385,7 +385,10 @@ public class AppRegistry {
 		} else {
 			throw new IllegalArgumentException("Cannot register app, as system property 'install4j.installationDir' is "
 					+ "not set, and the current working directory does not appear to be an "
-					+ "installed application either. Either ensure the system property is set (usually as a VM parameter in the launcher in the Install4j project), or ensure the application runs from its installed directory (not usually ideal for command line apps).");
+					+ "installed application either. Either ensure the system property is set "
+					+ "(usually as a VM parameter in the launcher in the Install4j project), "
+					+ "or ensure the application runs from its installed directory (not usually "
+					+ "ideal for command line apps). The resolved app directory is " + appDir);
 		}
 	}
 
