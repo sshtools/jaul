@@ -11,7 +11,8 @@ import com.install4j.runtime.installer.helper.Logger;
 public class GetJaulAppInstallDirAction extends AbstractInstallAction {
 
 	private String jaulAppId;
-	private String variableName;
+	private String versionVariableName = "appVersion";
+	private String installDirectoryVariableName = "appInstallDir";
 
 	@Override
 	public boolean install(InstallerContext context) throws UserCanceledException {
@@ -23,17 +24,21 @@ public class GetJaulAppInstallDirAction extends AbstractInstallAction {
 				var actualJaulAppId = getJaulAppId();
 				var app= AppRegistry.get().get(actualJaulAppId);
 				var appDef  = new LocalAppDef(app);
-				Logger.getInstance().info(this, MessageFormat.format("{0} is installed, version {1}. Setting variable {2}", actualJaulAppId, appDef.getVersion(), variableName));
-				context.setVariable(getVariableName(), appDef.getVersion());
+				var installDir = appDef.getRegistryDef().getDir().toString();
+				Logger.getInstance().info(this, MessageFormat.format("{0} is installed, version {1}, install dir {2}.", actualJaulAppId, appDef.getVersion(), installDir));
+				context.setVariable(getVersionVariableName(), appDef.getVersion());
+				context.setVariable(getInstallDirectoryVariableName(), installDir);
 			}
 			catch(IllegalStateException iae) {
 				/* Not installed */
-				Logger.getInstance().info(this, MessageFormat.format("{0} is not installed, setting variable {1} to empty.", jaulAppId, variableName));
-				context.setVariable(getVariableName(), "");
+				Logger.getInstance().info(this, MessageFormat.format("{0} is not installed, setting variables to empty.", jaulAppId));
+				context.setVariable(getVersionVariableName(), "");
+				context.setVariable(getInstallDirectoryVariableName(), "");
 			}
 		} catch (Exception e) {
-			Logger.getInstance().error(this, e.getMessage() + ". Setting variable " + variableName + " to empty.");
-			context.setVariable(getVariableName(), "");
+			Logger.getInstance().error(this, e.getMessage() + ". Setting variables to empty.");
+			context.setVariable(getVersionVariableName(), "");
+			context.setVariable(getInstallDirectoryVariableName(), "");
 		}
 		return false;
 	}
@@ -46,11 +51,19 @@ public class GetJaulAppInstallDirAction extends AbstractInstallAction {
 		this.jaulAppId = jaulAppId;
 	}
 
-	public String getVariableName() {
-		return replaceWithTextOverride("variableName", replaceVariables(this.variableName), String.class);
+	public String getVersionVariableName() {
+		return replaceWithTextOverride("versionVariableName", replaceVariables(this.versionVariableName), String.class);
 	}
 
-	public void setVariableName(String variableName) {
-		this.variableName = variableName;
+	public String getInstallDirectoryVariableName() {
+		return replaceWithTextOverride("installDirectoryVariableName", replaceVariables(this.installDirectoryVariableName), String.class);
+	}
+
+	public void setInstallDirectoryVariableName(String installDirectoryVariableName) {
+		this.installDirectoryVariableName = installDirectoryVariableName;
+	}
+
+	public void setVersionVariableName(String variableName) {
+		this.versionVariableName = variableName;
 	}
 }
