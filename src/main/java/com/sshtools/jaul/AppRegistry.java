@@ -413,7 +413,15 @@ public class AppRegistry {
 	}
 
 	private Path resolveAppDir() {
-		var appDir = Paths.get(System.getProperty("install4j.installationDir", System.getProperty("user.dir")));
+		var userdir = System.getProperty("user.dir");
+		var instdir = System.getProperty("install4j.installationDir", userdir);
+		if(instdir.startsWith("${")) {
+			log.warn("The system property 'install4j.installationDir' is set to {}, which is incorrect. "
+					+ "This should be the real path of the installation directory. I will assume the "
+					+ "launcher directory is the current directory {}, but that may not always be true.", instdir, userdir);
+			instdir = userdir;
+		}
+		var appDir = Paths.get(instdir);
 		var appFile = appDir.resolve(".install4j").resolve("i4jparams.conf");
 
 		// in case .install4j is a symbolic link to real installation (used when
