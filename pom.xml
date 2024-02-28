@@ -93,6 +93,8 @@
 						</manifest>
 						<manifestEntries>
 							<Install-Action>com.sshtools.jaul.InstallJaulAppAction</Install-Action>
+							<Install-Action>com.sshtools.jaul.GetJaulAppAction</Install-Action>
+							<Install-Action>com.sshtools.jaul.GetJaulAppInstallDirAction</Install-Action>
 						</manifestEntries>
 					</archive>
 				</configuration>
