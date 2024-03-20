@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.install4j.api.Util;
-import com.install4j.api.update.ApplicationDisplayMode;
 import com.sshtools.jaul.Telemetry.TelemetryBuilder;
 import com.sshtools.jaul.TelemetryEvent.Type;
 import com.sshtools.jaul.UpdateDescriptor.MediaType;
@@ -53,7 +52,7 @@ public class AppRegistry {
 			var descriptorStr = node.get("updatesUrl", "");
 			packaging = MediaType.valueOf(node.get("packaging", MediaType.INSTALLER.name()));
 			updatesUrl = descriptorStr.equals("") ? null : descriptorStr;
-			category = AppCategory.valueOf(node.get("category", ApplicationDisplayMode.GUI.name()));
+			category = AppCategory.valueOf(node.get("category", AppCategory.GUI.name()));
 		}
 
 		public final MediaType getPackaging() {
