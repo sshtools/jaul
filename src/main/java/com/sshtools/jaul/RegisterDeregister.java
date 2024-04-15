@@ -15,7 +15,7 @@ public class RegisterDeregister implements Callable<Integer> {
 
 	public final static class Register implements Callable<Integer> {
 		
-		private Optional<MediaType> packaging;
+		private Optional<MediaType> packaging = Optional.empty();
 		private String appId;
 		private AppCategory category;
 		private String updaterId;
