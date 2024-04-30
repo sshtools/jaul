@@ -9,8 +9,6 @@ import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.w3c.dom.Element;
-
 public class ArtifactVersion {
 
 	static Map<String, String> versions = Collections.synchronizedMap(new HashMap<>());
@@ -31,7 +29,6 @@ public class ArtifactVersion {
 	 * @param artifactId
 	 * @return
 	 */
-	@Deprecated(forRemoval = true)
 	public static String getVersion(String installerShortName, String groupId, String artifactId) {
 		String fakeVersion = Boolean.getBoolean("jadaptive.development")
 				? System.getProperty("jadaptive.development.version", System.getProperty("jadaptive.devVersion"))
