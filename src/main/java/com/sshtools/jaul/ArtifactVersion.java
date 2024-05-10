@@ -24,7 +24,7 @@ public class ArtifactVersion {
 	/**
 	 * Use {@link #getVersion(String, String)}.
 	 * 
-	 * @param installerShortName
+	 * @param installerShortName or '*' to get the first installed application
 	 * @param groupId
 	 * @param artifactId
 	 * @return
@@ -54,7 +54,7 @@ public class ArtifactVersion {
 				if(installerShortName != null) {
 					var el = doc.getDocumentElement().getElementsByTagName("general").item(0);
 					var mediaName = el.getAttributes().getNamedItem("mediaName").getTextContent();
-					if(mediaName.startsWith(installerShortName + "-")) {
+					if("*".equals(installerShortName) || mediaName.startsWith(installerShortName + "-")) {
 						detectedVersion = el.getAttributes().getNamedItem("applicationVersion").getTextContent();
 					}
 				}
