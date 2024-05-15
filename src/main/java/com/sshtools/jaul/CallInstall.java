@@ -156,8 +156,8 @@ public final class CallInstall implements RemoteCallable {
 
 	static void addStandardInstall4JArguments(List<String> args) {
 		args.add("-Vjaul.launchApp=true");
-		args.add("-Dinstall4j.logToStderr=true");
-		args.add("-Dinstall4j.debug=true");
+//		args.add("-Dinstall4j.logToStderr=true");
+//		args.add("-Dinstall4j.debug=true");
 
 		/*
 		 * I get corruption in both swing and javafx when running in a Windows VM guest,
