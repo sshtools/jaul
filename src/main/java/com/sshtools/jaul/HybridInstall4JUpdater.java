@@ -241,7 +241,6 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 
 	private  synchronized String report(long totalSoFar, long length, long started) {
 
-		boolean isDone = false;
 		if(totalSoFar > 0) {
 
 			var percentage = ((double) totalSoFar / (double)length) * 100;

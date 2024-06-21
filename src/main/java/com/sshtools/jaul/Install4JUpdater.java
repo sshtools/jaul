@@ -32,13 +32,16 @@ public class Install4JUpdater implements Callable<String> {
 	public interface IORunnable {
 		void run() throws IOException;
 	}
+	
+	public static Path bestRuntimePath(Path path) {
+//		if(Util.isWindows()) {
+			return path.resolve(".install4j");
+//		}
+//		return path;
+	}
 
 	public static void runWithBestRuntimeDir(IORunnable runnable) throws IOException {
-		if(Util.isWindows()) {
-			runWithRuntimeDir(runnable, Paths.get(".install4j"));
-			return;
-		}
-		runnable.run();
+		runWithRuntimeDir(runnable, Paths.get(System.getProperty("user.dir")));
 	}
 
 	public static void runWithRuntimeDir(IORunnable runnable, Path dir) throws IOException {
@@ -57,6 +60,24 @@ public class Install4JUpdater implements Callable<String> {
 		}
 		else
 			runnable.run();
+	}
+
+	public static <T> T callWithRuntimeDir(Callable<T> callable, Path dir) throws Exception {
+		if(Files.exists(dir)) {
+			var was = System.getProperty("install4j.runtimeDir");
+			try {
+				System.setProperty("install4j.runtimeDir", dir.toString());
+				return callable.call();
+			}
+			finally {
+				if(was == null)
+					System.getProperties().remove("install4j.runtimeDir");
+				else
+					System.setProperty("install4j.runtimeDir", was);
+			}
+		}
+		else
+			return callable.call();
 	}
 
 	public final static class Install4JUpdaterBuilder extends AbstractInstall4JUpdaterBuilder<Install4JUpdaterBuilder, Install4JUpdater> {
@@ -82,6 +103,7 @@ public class Install4JUpdater implements Callable<String> {
 		Optional<Consumer<Integer>> onExit = Optional.empty();
 		Optional<Supplier<ProgressListener>> progressListenerFactory = Optional.empty();
 		Optional<Runnable> onPrepareShutdown = Optional.empty();
+		Optional<Path> path = Optional.empty();
 
 		
 		@SuppressWarnings("unchecked")
@@ -103,6 +125,7 @@ public class Install4JUpdater implements Callable<String> {
 		public B withApp(App app, UpdateableAppContext ctx) {
 			return withLauncherId(app.getLauncherId()).
 				   withCurrentVersion(ctx.getVersion()).
+				   withPath(app.getDir()).
 				   withUpdateUrl(app.getUpdatesUrl().get().replace("${phase}", ctx.getPhase().name().toLowerCase()));
 		}
 
@@ -113,6 +136,12 @@ public class Install4JUpdater implements Callable<String> {
 		@SuppressWarnings("unchecked")
 		public B withInProcess(boolean inProcess) {
 			this.inProcess = inProcess;
+			return (B)this;
+		}
+		
+		@SuppressWarnings("unchecked")
+		public B withPath(Path path) {
+			this.path = Optional.of(path);
 			return (B)this;
 		}
 
@@ -195,12 +224,14 @@ public class Install4JUpdater implements Callable<String> {
 	
 	protected final Optional<Consumer<Integer>> onExit;
 	protected final Optional<Runnable> onPrepareShutdown;
+	protected final Optional<Path> path;
 	protected final boolean consoleMode;
 	protected final Optional<String[]> args;
 	protected final Optional<Supplier<ProgressListener>> progressListenerFactory;
 
 	protected Install4JUpdater(AbstractInstall4JUpdaterBuilder<?, ?> builder) {
 		this.args = builder.args;
+		this.path = builder.path;
 		this.onPrepareShutdown = builder.onPrepareShutdown;
 		this.uurl = builder.updateUrl.orElseThrow(() -> new IllegalStateException("Must provide update URL"));
 		this.consoleMode = builder.consoleMode;
@@ -217,41 +248,53 @@ public class Install4JUpdater implements Callable<String> {
 	@Override
 	public String call() throws IOException {
 		log.info("Check for updates in " + currentVersion + " from " + uurl);
-		UpdateDescriptor update;
+
 		try {
-			update = UpdateChecker.getUpdateDescriptor(uurl,
-					consoleMode ? ApplicationDisplayMode.CONSOLE : ApplicationDisplayMode.GUI);
-			var best = update.getPossibleUpdateEntry();
-			if (best == null) {
-				log.info("No currentVersion available.");
-				return System.getProperty("jajafx.fakeUpdateVersion");
-			}
-
-			var availableVersion = best.getNewVersion();
-			log.info(availableVersion + " is available.");
-
-			/* TODO: This will allow downgrades. */
-			if (!availableVersion.equals(currentVersion)) {
-				log.info("Update available.");
-			} else {
-				log.info("No update needed.");
+			return callWithRuntimeDir(() -> {
+				UpdateDescriptor update;
+				try {
+					log.info("Instal4j runtime dir is " + System.getProperty("install4j.runtimeDir"));
+					update = UpdateChecker.getUpdateDescriptor(uurl,
+							consoleMode ? ApplicationDisplayMode.CONSOLE : ApplicationDisplayMode.GUI);
+					
+					var best = update.getPossibleUpdateEntry();
+					if (best == null) {
+						log.info("No currentVersion available.");
+						return System.getProperty("jajafx.fakeUpdateVersion");
+					}
+	
+					var availableVersion = best.getNewVersion();
+					log.info(availableVersion + " is available.");
+	
+					/* TODO: This will allow downgrades. */
+					if (!availableVersion.equals(currentVersion)) {
+						log.info("Update available.");
+					} else {
+						log.info("No update needed.");
+						return null;
+					}
+	
+					if (checkOnly) {
+						log.info("Check only complete");
+						return availableVersion;
+					} else {
+						downloadAndExecuteUpdater(best);
+					}
+				} catch (UserCanceledException e) {
+					log.info("Cancelled.");
+					throw new InterruptedIOException("Cancelled.");
+				} catch (Exception e) {
+					log.info("Failed.", e);
+				}
 				return null;
-			}
-
-			if (checkOnly) {
-				log.info("Check only complete");
-				return availableVersion;
-			} else {
-				downloadAndExecuteUpdater(best);
-			}
-		} catch (UserCanceledException e) {
-			log.info("Cancelled.");
-			throw new InterruptedIOException("Cancelled.");
-		} catch (Exception e) {
-			log.info("Failed.", e);
+			}, bestRuntimePath(path.orElse(Paths.get(System.getProperty("user.dir")))));
 		}
-		return null;
-
+		catch(IOException ioe) {
+			throw ioe;
+		}
+		catch(Exception e) {
+			throw new IllegalStateException("Failed update.", e);
+		}
 	}
 
 	protected void downloadAndExecuteUpdater(UpdateDescriptorEntry best) throws IOException {
@@ -263,54 +306,52 @@ public class Install4JUpdater implements Callable<String> {
 
 		log.info("Updater args are {}", String.join(" ", args));
 		
-		runWithBestRuntimeDir(() -> {
-			if(inProcess) {	
-				log.info("Using in-process updater.");
-				
-				ApplicationLauncher.launchApplicationInProcess(launcherId, args.toArray(new String[0]), new ApplicationLauncher.Callback() {
-					@Override
-					public void exited(int exitValue) {
-						log.info("Internal updater finished.");
-						onExit.ifPresent(oe -> oe.accept(exitValue));
-					} 
+		if(inProcess) {	
+			log.info("Using in-process updater.");
+			
+			ApplicationLauncher.launchApplicationInProcess(launcherId, args.toArray(new String[0]), new ApplicationLauncher.Callback() {
+				@Override
+				public void exited(int exitValue) {
+					log.info("Internal updater finished.");
+					onExit.ifPresent(oe -> oe.accept(exitValue));
+				} 
 
-					@Override
-					public void prepareShutdown() {
-						// not invoked on event dispatch thread)
-						log.info("Internal updater, prep. shutdown.");
-						onPrepareShutdown.ifPresent(oe -> oe.run());
-					}
+				@Override
+				public void prepareShutdown() {
+					// not invoked on event dispatch thread)
+					log.info("Internal updater, prep. shutdown.");
+					onPrepareShutdown.ifPresent(oe -> oe.run());
+				}
 
-					@Override
-					public ProgressListener createProgressListener() {
-						return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
-					}
-				}, ApplicationLauncher.WindowMode.FRAME, null);
-			}
-			else {
-				log.info("Using external updater.");
-				
-				ApplicationLauncher.launchApplication(launcherId, args.toArray(new String[0]), true, new ApplicationLauncher.Callback() {
-					@Override
-					public void exited(int exitValue) {
-						log.info("External updater finished.");
-						onExit.ifPresent(oe -> oe.accept(exitValue));
-					} 
+				@Override
+				public ProgressListener createProgressListener() {
+					return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
+				}
+			}, ApplicationLauncher.WindowMode.FRAME, null);
+		}
+		else {
+			log.info("Using external updater.");
+			
+			ApplicationLauncher.launchApplication(launcherId, args.toArray(new String[0]), true, new ApplicationLauncher.Callback() {
+				@Override
+				public void exited(int exitValue) {
+					log.info("External updater finished.");
+					onExit.ifPresent(oe -> oe.accept(exitValue));
+				} 
 
-					@Override
-					public void prepareShutdown() {
-						// not invoked on event dispatch thread)
-						log.info("External updater, prep. shutdown.");
-						onPrepareShutdown.ifPresent(oe -> oe.run());
-					}
+				@Override
+				public void prepareShutdown() {
+					// not invoked on event dispatch thread)
+					log.info("External updater, prep. shutdown.");
+					onPrepareShutdown.ifPresent(oe -> oe.run());
+				}
 
-					@Override
-					public ProgressListener createProgressListener() {
-						log.info("Creating progress monitor.");
-						return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
-					}
-				});
-			}
-		});
+				@Override
+				public ProgressListener createProgressListener() {
+					log.info("Creating progress monitor.");
+					return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
+				}
+			});
+		}
 	}
 }

@@ -16,6 +16,7 @@ import com.install4j.api.Util;
 import com.install4j.api.context.ProgressInterface;
 import com.install4j.api.context.RemoteCallable;
 
+@SuppressWarnings("serial")
 public final class CallInstall implements RemoteCallable {
 	private final ProgressInterface prg;
 	private String urlText;

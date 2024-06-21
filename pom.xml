@@ -50,7 +50,7 @@
 		<dependency>
 			<groupId>com.install4j</groupId>
 			<artifactId>install4j-runtime</artifactId>
-			<version>10.0.6</version>
+			<version>10.0.7</version>
 			<optional>true</optional>
 			<!-- MUST be provided, the runtime is added by I4J itself -->
 			<scope>provided</scope>
@@ -92,9 +92,7 @@
 							<addClasspath>true</addClasspath>
 						</manifest>
 						<manifestEntries>
-							<Install-Action>com.sshtools.jaul.InstallJaulAppAction</Install-Action>
-							<Install-Action>com.sshtools.jaul.GetJaulAppAction</Install-Action>
-							<Install-Action>com.sshtools.jaul.GetJaulAppInstallDirAction</Install-Action>
+							<Install-Action>com.sshtools.jaul.InstallJaulAppAction,com.sshtools.jaul.GetJaulAppAction,com.sshtools.jaul.GetJaulAppInstallDirAction,com.sshtools.jaul.RegisterJaulAppAction,com.sshtools.jaul.DeregisterJaulAppAction</Install-Action>
 						</manifestEntries>
 					</archive>
 				</configuration>
