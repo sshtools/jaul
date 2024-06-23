@@ -13,10 +13,6 @@ import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.install4j.api.Util;
 import com.install4j.api.context.UserCanceledException;
 import com.install4j.api.launcher.ApplicationLauncher;
 import com.install4j.api.launcher.ApplicationLauncher.Callback;
@@ -215,7 +211,6 @@ public class Install4JUpdater implements Callable<String> {
 
 	}
 
-	static Logger log = LoggerFactory.getLogger(Install4JUpdateService.class);
 	private final String uurl;
 	private final boolean inProcess;
 	private final String currentVersion;
@@ -247,44 +242,44 @@ public class Install4JUpdater implements Callable<String> {
 
 	@Override
 	public String call() throws IOException {
-		log.info("Check for updates in " + currentVersion + " from " + uurl);
+		Logging.info("Check for updates in " + currentVersion + " from " + uurl);
 
 		try {
 			return callWithRuntimeDir(() -> {
 				UpdateDescriptor update;
 				try {
-					log.info("Instal4j runtime dir is " + System.getProperty("install4j.runtimeDir"));
+					Logging.info("Instal4j runtime dir is " + System.getProperty("install4j.runtimeDir"));
 					update = UpdateChecker.getUpdateDescriptor(uurl,
 							consoleMode ? ApplicationDisplayMode.CONSOLE : ApplicationDisplayMode.GUI);
 					
 					var best = update.getPossibleUpdateEntry();
 					if (best == null) {
-						log.info("No currentVersion available.");
+						Logging.info("No currentVersion available.");
 						return System.getProperty("jajafx.fakeUpdateVersion");
 					}
 	
 					var availableVersion = best.getNewVersion();
-					log.info(availableVersion + " is available.");
+					Logging.info(availableVersion + " is available.");
 	
 					/* TODO: This will allow downgrades. */
 					if (!availableVersion.equals(currentVersion)) {
-						log.info("Update available.");
+						Logging.info("Update available.");
 					} else {
-						log.info("No update needed.");
+						Logging.info("No update needed.");
 						return null;
 					}
 	
 					if (checkOnly) {
-						log.info("Check only complete");
+						Logging.info("Check only complete");
 						return availableVersion;
 					} else {
 						downloadAndExecuteUpdater(best);
 					}
 				} catch (UserCanceledException e) {
-					log.info("Cancelled.");
+					Logging.info("Cancelled.");
 					throw new InterruptedIOException("Cancelled.");
 				} catch (Exception e) {
-					log.info("Failed.", e);
+					Logging.info("Failed.", e);
 				}
 				return null;
 			}, bestRuntimePath(path.orElse(Paths.get(System.getProperty("user.dir")))));
@@ -304,22 +299,22 @@ public class Install4JUpdater implements Callable<String> {
 		this.args.ifPresent(a -> args.addAll(Arrays.asList(a)));
 		args.add("-VupdatesUrl=" + uurl);		
 
-		log.info("Updater args are {}", String.join(" ", args));
+		Logging.info("Updater args are {}", String.join(" ", args));
 		
 		if(inProcess) {	
-			log.info("Using in-process updater.");
+			Logging.info("Using in-process updater.");
 			
 			ApplicationLauncher.launchApplicationInProcess(launcherId, args.toArray(new String[0]), new ApplicationLauncher.Callback() {
 				@Override
 				public void exited(int exitValue) {
-					log.info("Internal updater finished.");
+					Logging.info("Internal updater finished.");
 					onExit.ifPresent(oe -> oe.accept(exitValue));
 				} 
 
 				@Override
 				public void prepareShutdown() {
 					// not invoked on event dispatch thread)
-					log.info("Internal updater, prep. shutdown.");
+					Logging.info("Internal updater, prep. shutdown.");
 					onPrepareShutdown.ifPresent(oe -> oe.run());
 				}
 
@@ -330,25 +325,25 @@ public class Install4JUpdater implements Callable<String> {
 			}, ApplicationLauncher.WindowMode.FRAME, null);
 		}
 		else {
-			log.info("Using external updater.");
+			Logging.info("Using external updater.");
 			
 			ApplicationLauncher.launchApplication(launcherId, args.toArray(new String[0]), true, new ApplicationLauncher.Callback() {
 				@Override
 				public void exited(int exitValue) {
-					log.info("External updater finished.");
+					Logging.info("External updater finished.");
 					onExit.ifPresent(oe -> oe.accept(exitValue));
 				} 
 
 				@Override
 				public void prepareShutdown() {
 					// not invoked on event dispatch thread)
-					log.info("External updater, prep. shutdown.");
+					Logging.info("External updater, prep. shutdown.");
 					onPrepareShutdown.ifPresent(oe -> oe.run());
 				}
 
 				@Override
 				public ProgressListener createProgressListener() {
-					log.info("Creating progress monitor.");
+					Logging.info("Creating progress monitor.");
 					return progressListenerFactory.map(p -> p.get()).orElseGet(() -> Callback.super.createProgressListener());
 				}
 			});

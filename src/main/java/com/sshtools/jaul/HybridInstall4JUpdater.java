@@ -18,9 +18,6 @@ import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Function;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.install4j.api.Util;
 import com.install4j.api.update.UpdateDescriptorEntry;
 
@@ -61,8 +58,6 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 		}
 
 	}
-
-	static Logger log = LoggerFactory.getLogger(Install4JUpdateService.class);
 
 	private final Optional<Function<String[], Integer>> commandExecutor;
 	private final boolean unattended;
@@ -113,7 +108,7 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 				args.add("Installing");
 			}
 		}
-		log.info("Running installer executable. '{}'", String.join(" ", args));
+		Logging.info("Running installer executable. '{}'", String.join(" ", args));
 		if (commandExecutor.isPresent()) {
 			return commandExecutor.get().apply(args.toArray(new String[0]));
 		} else {

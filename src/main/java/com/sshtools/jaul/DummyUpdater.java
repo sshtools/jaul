@@ -4,10 +4,6 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-
 public final class DummyUpdater implements Callable<String> {
 	
 	public final static class DummyUpdaterBuilder {
@@ -64,8 +60,6 @@ public final class DummyUpdater implements Callable<String> {
 		}
 		
 	}
-
-	static Logger log = LoggerFactory.getLogger(Install4JUpdateService.class);
 
 	private final long checkPause;
 	private final long updatePause;

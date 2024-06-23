@@ -12,12 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public abstract class AbstractUpdateService implements UpdateService {
-
-	static Logger log = LoggerFactory.getLogger(AbstractUpdateService.class);
 
 	private List<DownloadListener> downloadListeners = new ArrayList<>();
 	private boolean updating;
@@ -57,7 +52,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 	@Override
 	public final void checkForUpdate() throws IOException {
 		setDeferUntil(0);
-		log.info("Checking for updates ...");
+		Logging.info("Checking for updates ...");
 		update(true);
 	}
 
@@ -139,10 +134,10 @@ public abstract class AbstractUpdateService implements UpdateService {
 		setDeferUntil(when);
 		try {
 			rescheduleCheck(0);
-			log.info("Deferred update until " + DateFormat.getDateTimeInstance().format(new Date(when)));
+			Logging.info("Deferred update until " + DateFormat.getDateTimeInstance().format(new Date(when)));
 		}
 		catch(UnsupportedOperationException uoe) {
-			log.info("No scheduler, update check will not occur this runtime.");
+			Logging.info("No scheduler, update check will not occur this runtime.");
 		}
 	}
 
@@ -163,7 +158,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 		long defer = getDeferUntil();
 		long when = defer == 0 ? 0 : defer - System.currentTimeMillis();
 		if (when > 0) {
-			log.info(String.format("Scheduling next check for %s",
+			Logging.info(String.format("Scheduling next check for %s",
 					DateFormat.getDateTimeInstance().format(new Date(defer))));
 			checkTask = context.getScheduler().schedule(() -> timedCheck(), when, TimeUnit.MILLISECONDS);
 		} else {
@@ -194,7 +189,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 		try {
 			update(true);
 		} catch (Exception e) {
-			log.error("Failed to automatically check for updates.", e);
+			Logging.error("Failed to automatically check for updates.", e);
 		} finally {
 			rescheduleCheck(0);
 		}
@@ -204,7 +199,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 		if(isUpdating())
 			throw new IllegalStateException("Already updating.");
 		if (!isUpdatesEnabled()) {
-			log.info("Updates disabled.");
+			Logging.info("Updates disabled.");
 			setAvailableVersion(null);
 		} else {
 			long defer = getDeferUntil();
@@ -214,10 +209,10 @@ public abstract class AbstractUpdateService implements UpdateService {
 				try {
 					var ver = doUpdate(check);
 					if(ver == null) {
-						log.info("No updates available");
+						Logging.info("No updates available");
 					}
 					else {
-						log.info("Version {} is available.", ver);
+						Logging.info("Version {} is available.", ver);
 					}
 					setAvailableVersion(ver);
 				} finally {
@@ -227,7 +222,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 					}
 				}
 			} else {
-				log.info(String.format("Updates deferred until %s",
+				Logging.info(String.format("Updates deferred until %s",
 						DateFormat.getDateTimeInstance().format(new Date(defer))));
 			}
 		}

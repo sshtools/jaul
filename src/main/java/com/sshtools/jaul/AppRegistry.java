@@ -16,15 +16,32 @@ import java.util.Optional;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.install4j.api.Util;
 import com.sshtools.jaul.Telemetry.TelemetryBuilder;
 import com.sshtools.jaul.TelemetryEvent.Type;
 import com.sshtools.jaul.UpdateDescriptor.MediaType;
 
 public class AppRegistry {
+	
+	static void checkPreferencesDir() {
+		/* Bit weird, but have found the Java does not create /etc/.java/.systemPrefs
+		 * by default. Maybe its something that Java installer or packages ususually do,
+		 * and because we are using bundled Install4J JDKs, this is not happening?
+		 */
+		if(System.getProperty("os.name").toLowerCase().contains("linux")) {
+			var path = Paths.get("/etc/.java/.systemPrefs");
+			if(!Files.exists(path)) {
+				try {
+					Files.createDirectories(path);
+				}
+				catch(Exception e) {
+					Logging.warn("Failed to create system preferences file " + path + " for work-around.");
+				}
+			}
+		}
+	}
+	
+	
 	@SuppressWarnings("serial")
 	public final static class App implements Serializable {
 		private final String id;
@@ -122,8 +139,6 @@ public class AppRegistry {
 		USER, SYSTEM
 	}
 
-	static Logger log = LoggerFactory.getLogger(AppRegistry.class);
-
 	private static AppRegistry instance;
 
 //	private Optional<Preferences> systemPreferences = Optional.empty();
@@ -162,7 +177,7 @@ public class AppRegistry {
 	public List<App> getApps(Optional<Scope> scope) {
 		var l = new ArrayList<App>();
 		if(scope.isEmpty() || scope.get().equals(Scope.USER)) {
-			log.info("Retrieving user applications.");
+			Logging.info("Retrieving user applications.");
 			var p = getUserPreferences();
 			try {
 				p.sync();
@@ -172,17 +187,17 @@ public class AppRegistry {
 				for (var k : p.childrenNames()) {
 					try {
 						var node = p.node(k);
-						log.info("    {}", k);
+						Logging.info("    {}", k);
 						l.add(checkApp(new App(Scope.USER, node), node));
 					} catch (Exception e) {
-						if (log.isDebugEnabled())
-							log.error(MessageFormat.format("Failed to add app {0}.", k), e);
+						if (Logging.isDebugEnabled())
+							Logging.error(MessageFormat.format("Failed to add app {0}.", k), e);
 						else
-							log.error(MessageFormat.format("Failed to add app {0}. {1}", k, e.getMessage()));
+							Logging.error(MessageFormat.format("Failed to add app {0}. {1}", k, e.getMessage()));
 					}
 				}
 			} catch (BackingStoreException e) {
-				log.error("Failed to list system apps.", e);
+				Logging.error("Failed to list system apps.", e);
 			}
 		}
 		if((Util.hasFullAdminRights() && scope.isEmpty()) || (!scope.isEmpty() && scope.get().equals(Scope.SYSTEM))) {
@@ -191,25 +206,25 @@ public class AppRegistry {
 				s.sync();
 			} catch (BackingStoreException e) {
 			}
-			log.info("Retrieving system applications.");
+			Logging.info("Retrieving system applications.");
 			try {
 				for (var k : s.childrenNames()) {
 					try {
 						var node = s.node(k);
-						log.info("    {}", k);
+						Logging.info("    {}", k);
 						if (contains(k, l)) {
-							log.warn("Already installed as user app, that will take precedence.");
+							Logging.warn("Already installed as user app, that will take precedence.");
 						} else
 							l.add(checkApp(new App(Scope.SYSTEM, node), node));
 					} catch (Exception e) {
-						if (log.isDebugEnabled())
-							log.error(MessageFormat.format("Failed to add app {0}.", k), e);
+						if (Logging.isDebugEnabled())
+							Logging.error(MessageFormat.format("Failed to add app {0}.", k), e);
 						else
-							log.error(MessageFormat.format("Failed to add app {0}. {1}", k, e.getMessage()));
+							Logging.error(MessageFormat.format("Failed to add app {0}. {1}", k, e.getMessage()));
 					}
 				}
 			} catch (BackingStoreException e) {
-				log.error("Failed to list system apps.", e);
+				Logging.error("Failed to list system apps.", e);
 			}
 		}
 		return l;
@@ -221,7 +236,7 @@ public class AppRegistry {
 			deregister(get(id));
 		}
 		catch(IllegalStateException ise) {
-			log.warn("Could not deregister.", ise);
+			Logging.warn("Could not deregister.", ise);
 		}
 	}
 
@@ -238,7 +253,7 @@ public class AppRegistry {
 			deregister(get(clazz));
 		}
 		catch(IllegalStateException ise) {
-			log.warn("Could not deregister.", ise);
+			Logging.warn("Could not deregister.", ise);
 		}
 	}
 
@@ -252,10 +267,10 @@ public class AppRegistry {
 			}
 		});
 		if (app.getScope() == Scope.SYSTEM) {
-			log.info("De-registering as system wide application.");
+			Logging.info("De-registering as system wide application.");
 			deregister(app, getSystemPreferences());
 		} else {
-			log.info("De-registering as user application.");
+			Logging.info("De-registering as user application.");
 			deregister(app, getUserPreferences());
 		}
 	}
@@ -288,7 +303,7 @@ public class AppRegistry {
 
 	public App get(Path installDir) {
 		try {
-			log.debug("Retrieving as user application.");
+			Logging.debug("Retrieving as user application.");
 			var userRoot = getUserPreferences();
 			for(var userAppId : userRoot.childrenNames()) {
 				try {
@@ -298,11 +313,11 @@ public class AppRegistry {
 					}
 				}
 				catch(Exception ioe) {
-					log.debug("Ignoring error looking for registered app give path " + installDir, ioe);
+					Logging.debug("Ignoring error looking for registered app give path " + installDir, ioe);
 				}
 			}
 			
-			log.debug("Retrieving as system application.");
+			Logging.debug("Retrieving as system application.");
 			var sysRoot = getSystemPreferences();
 			for(var systemAppId : sysRoot.childrenNames()) {
 				try {
@@ -312,7 +327,7 @@ public class AppRegistry {
 					}
 				}
 				catch(Exception ioe) {
-					log.debug("Ignoring error looking for registered app give path " + installDir, ioe);
+					Logging.debug("Ignoring error looking for registered app give path " + installDir, ioe);
 				}
 			}
 
@@ -326,12 +341,12 @@ public class AppRegistry {
 
 	public App get(String id) {
 		try {
-			log.debug("Retrieving as user application.");
+			Logging.debug("Retrieving as user application.");
 			var userRoot = getUserPreferences();
 			if (Arrays.asList(userRoot.childrenNames()).contains(id)) {
 				return new App(Scope.USER, userRoot.node(id));
 			}
-			log.debug("Retrieving as system application.");
+			Logging.debug("Retrieving as system application.");
 			var sysRoot = getSystemPreferences();
 			if (Arrays.asList(sysRoot.childrenNames()).contains(id)) {
 				return new App(Scope.SYSTEM, sysRoot.node(id));
@@ -383,11 +398,12 @@ public class AppRegistry {
 		if (Files.exists(appFile)) {
 			App app;
 			if (!Boolean.getBoolean("jaul.forceUserRegistration") && Util.hasFullAdminRights()) {
-				log.info("Registering as system wide application.");
+				Logging.info("Registering as system wide application.");
+				checkPreferencesDir();
 				app = new App(Scope.SYSTEM,
 						saveToPreferences(jaulApp, appDir, appFile, packaging, getSystemPreferences()));
 			} else {
-				log.info("Registering as user application.");
+				Logging.info("Registering as user application.");
 				app = new App(Scope.USER, saveToPreferences(jaulApp, appDir, appFile, packaging, getUserPreferences()));
 			}
 			var telem = telemetryForApp(app).build();
@@ -431,7 +447,7 @@ public class AppRegistry {
 		var userdir = System.getProperty("user.dir");
 		var instdir = System.getProperty("install4j.installationDir", userdir);
 		if(instdir.startsWith("${")) {
-			log.warn("The system property 'install4j.installationDir' is set to {}, which is incorrect. "
+			Logging.warn("The system property 'install4j.installationDir' is set to {}, which is incorrect. "
 					+ "This should be the real path of the installation directory. I will assume the "
 					+ "launcher directory is the current directory {}, but that may not always be true.", instdir, userdir);
 			instdir = userdir;
@@ -453,19 +469,19 @@ public class AppRegistry {
 		try {
 			appNode.removeNode();
 		} catch (BackingStoreException e) {
-			log.error("Failed to de-register application.", e);
+			Logging.error("Failed to de-register application.", e);
 		}
 	}
 
 	private Preferences saveToPreferences(JaulAppProvider app, Path appDir, Path appFile, MediaType packaging, Preferences p) {
 
-		log.info("App :");
-		log.info("   ID: {}", app.id());
-		log.info("   Updates URL: {}", app.updatesUrl());
-		log.info("   Launcher ID: {}", app.updaterId());
-		log.info("   Packaging: {}", packaging);
-		log.info("   Category: {}", app.category().name());
-		log.info("   Dir: {}", appDir.toAbsolutePath().toString());
+		Logging.info("App :");
+		Logging.info("   ID: {}", app.id());
+		Logging.info("   Updates URL: {}", app.updatesUrl());
+		Logging.info("   Launcher ID: {}", app.updaterId());
+		Logging.info("   Packaging: {}", packaging);
+		Logging.info("   Category: {}", app.category().name());
+		Logging.info("   Dir: {}", appDir.toAbsolutePath().toString());
 		var appNode = p.node(app.id());
 		try {
 			appNode.put("updatesUrl", app.updatesUrl());
@@ -475,8 +491,9 @@ public class AppRegistry {
 			appNode.put("id", app.id());
 			appNode.put("appDir", appDir.toAbsolutePath().toString());
 			appNode.flush();
+			Thread.sleep(5000);
 		} catch (Exception ioe) {
-			log.warn("Cannot register app.", ioe);
+			Logging.warn("Cannot register app.", ioe);
 		}
 		return appNode;
 	}

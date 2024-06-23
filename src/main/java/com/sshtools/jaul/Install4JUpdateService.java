@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.install4j.api.launcher.ApplicationLauncher;
 import com.install4j.api.launcher.ApplicationLauncher.ProgressListener;
 import com.sshtools.jaul.AppRegistry.App;
@@ -46,8 +43,6 @@ public class Install4JUpdateService extends AbstractUpdateService {
 
 	}
 
-	static Logger log = LoggerFactory.getLogger(Install4JUpdateService.class);
-	
 	private final Supplier<? extends AbstractInstall4JUpdaterBuilder<?, ?>> builderFactory;
 
 	public Install4JUpdateService(UpdateableAppContext context, Supplier<? extends AbstractInstall4JUpdaterBuilder<?, ?>> builderFactory) {
@@ -73,7 +68,7 @@ public class Install4JUpdateService extends AbstractUpdateService {
 			@Override
 			public void statusMessage(String message) {
 				if(!Objects.equals(this.message, message)) {
-					log.info("Update Message: {}", message);
+					Logging.info("Update Message: {}", message);
 					this.message = message;
 					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message, detail));
 				}
@@ -83,8 +78,8 @@ public class Install4JUpdateService extends AbstractUpdateService {
 			public void detailMessage(String detail) {
 				if(!Objects.equals(this.detail, detail)) {
 					
-					if(log.isDebugEnabled())
-						log.debug("Update Detail: {}", detail);
+					if(Logging.isDebugEnabled())
+						Logging.debug("Update Detail: {}", detail);
 					
 					this.detail = detail;
 					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message, detail));

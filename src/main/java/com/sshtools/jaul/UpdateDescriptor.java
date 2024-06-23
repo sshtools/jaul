@@ -16,15 +16,12 @@ import java.util.TreeMap;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import com.install4j.api.Util;
 
 public class UpdateDescriptor {
-	static Logger log = LoggerFactory.getLogger(UpdateDescriptor.class);
 
 	public enum MediaType {
 		INSTALLER, RPM, DEB, ARCHIVE;
@@ -323,7 +320,7 @@ public class UpdateDescriptor {
 					}
 				}
 				if (mediaType == null) {
-					log.warn("Skipping {} in descriptor, it doesn't match any media type.", fileName);
+					Logging.warn("Skipping {} in descriptor, it doesn't match any media type.", fileName);
 					continue;
 				}
 
@@ -335,7 +332,7 @@ public class UpdateDescriptor {
 					}
 				}
 				if (mediaOs == null) {
-					log.warn("Skipping {} in descriptor, it doesn't match any OS.", fileName);
+					Logging.warn("Skipping {} in descriptor, it doesn't match any OS.", fileName);
 					continue;
 				}
 

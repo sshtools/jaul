@@ -6,21 +6,16 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.prefs.Preferences;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.sshtools.jaul.AppRegistry.App;
 import com.sshtools.jaul.TelemetryEvent.TelemetryEventBuilder;
 
 public final class Telemetry {
-	static Logger log = LoggerFactory.getLogger(Telemetry.class);
 
 	final static String RUN_ID = UUID.randomUUID().toString();
 	final static Object LOCK = new Object();
@@ -86,7 +81,7 @@ public final class Telemetry {
 				}
 			}
 		} catch (Exception ioe) {
-			log.warn("Failed to write telemetry event.", ioe);
+			Logging.warn("Failed to write telemetry event.", ioe);
 		}
 	}
 
@@ -114,11 +109,11 @@ public final class Telemetry {
 					t.start();
 					return Optional.of(t);
 				} else {
-					log.info("No telemetry data to send.");
+					Logging.info("No telemetry data to send.");
 					return Optional.empty();
 				}
 			} catch (Exception e) {
-				log.warn("Failed to send prepare telemetry data.", e);
+				Logging.warn("Failed to send prepare telemetry data.", e);
 				return Optional.empty();
 			}
 		}
