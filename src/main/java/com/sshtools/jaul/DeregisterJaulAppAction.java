@@ -14,7 +14,7 @@ import com.install4j.runtime.installer.helper.Logger;
 @SuppressWarnings("serial")
 public class DeregisterJaulAppAction extends AbstractUninstallAction {
 
-	private String jaulAppId;
+	private String jaulAppId = "${compiler:install4j.jaulAppId}";
 
 	@Override
 	public boolean uninstall(UninstallerContext context) throws UserCanceledException {

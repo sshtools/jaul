@@ -12,9 +12,9 @@ import com.sshtools.jaul.UpdateDescriptor.MediaType;
 @SuppressWarnings("serial")
 public class RegisterJaulAppAction extends AbstractInstallAction {
 
-	private String updatesXmlLocation;
-	private String jaulAppId;
-	private String updaterId;
+	private String updatesXmlLocation = "${compiler:install4j.updatesBase}/${compiler:install4j.phase}/updates.xml";
+	private String updaterId = "${compiler:install4j.jaulUpdaterId}";
+	private String jaulAppId = "${compiler:install4j.jaulAppId}";
 	private AppCategory appCategory;
 
 	@Override
