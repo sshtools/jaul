@@ -225,6 +225,14 @@ public class AppRegistry {
 		}
 	}
 
+	/**
+	 * Deprecated. Should be deregistered at uninstall time by either
+	 * the custom Install4J actions or the Jaul utility classes.
+	 * 
+	 * @param clazz class
+	 * @param packaging packaging
+	 */
+	@Deprecated(since = "0.9.11")
 	public void deregister(Class<?> clazz) {
 		try {
 			deregister(get(clazz));
@@ -329,7 +337,7 @@ public class AppRegistry {
 				return new App(Scope.SYSTEM, sysRoot.node(id));
 			}
 			throw new IllegalStateException(
-					"Cannot get app, as it has not been registered. This is usually done at installation time using '--jaul-register'. Either this did not happen,  "
+					"Cannot get app, as it has not been registered. This is usually done at installation time using '--jaul-register' or the Install4J installer. Either this did not happen,  "
 							+ "or you are running in a development environment. You can fake an installation by linking '.install4j' directory from a real installation, then running this app with '--jaul-register'.");
 		} catch (BackingStoreException bse) {
 			throw new IllegalStateException("Failed to query preferences api for application registry details.", bse);
@@ -351,7 +359,15 @@ public class AppRegistry {
 	public App register(Class<?> clazz) {
 		return register(clazz, MediaType.INSTALLER);
 	}
-	
+
+	/**
+	 * Deprecated. Should be registered at install time by either
+	 * the custom Install4J actions or the Jaul utility classes.
+	 * 
+	 * @param clazz class
+	 * @param packaging packaging
+	 */
+	@Deprecated(since = "0.9.11")
 	public App register(Class<?> clazz, MediaType packaging) {
 		return register(JaulAppProvider.fromClass(clazz), packaging);
 	}

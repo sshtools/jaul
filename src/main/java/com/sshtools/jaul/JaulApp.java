@@ -11,9 +11,30 @@ public @interface JaulApp  {
 
 	String id();
 	
+	/**
+	 * Deprecated. These details should be registered at install time by either
+	 * the custom Install4J actions or the Jaul utility classes.
+	 * 
+	 * @return category
+	 */
+	@Deprecated(since = "0.9.11")
 	AppCategory category();
-	
+
+	/**
+	 * Deprecated. These details should be registered at install time by either
+	 * the custom Install4J actions or the Jaul utility classes.
+	 * 
+	 * @return category
+	 */
+	@Deprecated(since = "0.9.11")
 	String updatesUrl();
-	
+
+	/**
+	 * Deprecated. These details should be registered at install time by either
+	 * the custom Install4J actions or the Jaul utility classes.
+	 * 
+	 * @return category
+	 */
+	@Deprecated(since = "0.9.11")
 	String updaterId();
 }
