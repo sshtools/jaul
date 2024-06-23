@@ -299,7 +299,7 @@ public class Install4JUpdater implements Callable<String> {
 		this.args.ifPresent(a -> args.addAll(Arrays.asList(a)));
 		args.add("-VupdatesUrl=" + uurl);		
 
-		Logging.info("Updater args are {}", String.join(" ", args));
+		Logging.info("Updater args are {0}", String.join(" ", args));
 		
 		if(inProcess) {	
 			Logging.info("Using in-process updater.");

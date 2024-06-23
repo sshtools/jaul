@@ -68,7 +68,7 @@ public class Install4JUpdateService extends AbstractUpdateService {
 			@Override
 			public void statusMessage(String message) {
 				if(!Objects.equals(this.message, message)) {
-					Logging.info("Update Message: {}", message);
+					Logging.info("Update Message: {0}", message);
 					this.message = message;
 					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message, detail));
 				}
@@ -79,7 +79,7 @@ public class Install4JUpdateService extends AbstractUpdateService {
 				if(!Objects.equals(this.detail, detail)) {
 					
 					if(Logging.isDebugEnabled())
-						Logging.debug("Update Detail: {}", detail);
+						Logging.debug("Update Detail: {0}", detail);
 					
 					this.detail = detail;
 					fireDownload(new DownloadEvent(Type.PROGRESS, percent, message, detail));

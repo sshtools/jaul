@@ -108,7 +108,7 @@ public final class HybridInstall4JUpdater extends Install4JUpdater {
 				args.add("Installing");
 			}
 		}
-		Logging.info("Running installer executable. '{}'", String.join(" ", args));
+		Logging.info("Running installer executable. '{0}'", String.join(" ", args));
 		if (commandExecutor.isPresent()) {
 			return commandExecutor.get().apply(args.toArray(new String[0]));
 		} else {

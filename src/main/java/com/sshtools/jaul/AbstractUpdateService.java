@@ -212,7 +212,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 						Logging.info("No updates available");
 					}
 					else {
-						Logging.info("Version {} is available.", ver);
+						Logging.info("Version {0} is available.", ver);
 					}
 					setAvailableVersion(ver);
 				} finally {

@@ -84,6 +84,16 @@ public class AppRegistry {
 			return Phase.valueOf(getAppPreferences().get(AppRegistry.KEY_PHASE, Phase.STABLE.name()));
 		}
 
+		public final void setPhase(Phase phase) {
+			var node = getAppPreferences();
+			node.put(AppRegistry.KEY_PHASE, phase.name());
+			try {
+				node.flush();
+			} catch (BackingStoreException e) {
+				throw new IllegalArgumentException(e);
+			}
+		}
+
 		public final AppCategory getCategory() {
 			return category;
 		}
@@ -177,7 +187,7 @@ public class AppRegistry {
 	public List<App> getApps(Optional<Scope> scope) {
 		var l = new ArrayList<App>();
 		if(scope.isEmpty() || scope.get().equals(Scope.USER)) {
-			Logging.info("Retrieving user applications.");
+			Logging.debug("Retrieving user applications.");
 			var p = getUserPreferences();
 			try {
 				p.sync();
@@ -187,7 +197,7 @@ public class AppRegistry {
 				for (var k : p.childrenNames()) {
 					try {
 						var node = p.node(k);
-						Logging.info("    {}", k);
+						Logging.debug("    {0}", k);
 						l.add(checkApp(new App(Scope.USER, node), node));
 					} catch (Exception e) {
 						if (Logging.isDebugEnabled())
@@ -206,12 +216,12 @@ public class AppRegistry {
 				s.sync();
 			} catch (BackingStoreException e) {
 			}
-			Logging.info("Retrieving system applications.");
+			Logging.debug("Retrieving system applications.");
 			try {
 				for (var k : s.childrenNames()) {
 					try {
 						var node = s.node(k);
-						Logging.info("    {}", k);
+						Logging.debug("    {0}", k);
 						if (contains(k, l)) {
 							Logging.warn("Already installed as user app, that will take precedence.");
 						} else
@@ -447,9 +457,9 @@ public class AppRegistry {
 		var userdir = System.getProperty("user.dir");
 		var instdir = System.getProperty("install4j.installationDir", userdir);
 		if(instdir.startsWith("${")) {
-			Logging.warn("The system property 'install4j.installationDir' is set to {}, which is incorrect. "
+			Logging.warn("The system property 'install4j.installationDir' is set to {0}, which is incorrect. "
 					+ "This should be the real path of the installation directory. I will assume the "
-					+ "launcher directory is the current directory {}, but that may not always be true.", instdir, userdir);
+					+ "launcher directory is the current directory {1}, but that may not always be true.", instdir, userdir);
 			instdir = userdir;
 		}
 		var appDir = Paths.get(instdir);
@@ -476,12 +486,12 @@ public class AppRegistry {
 	private Preferences saveToPreferences(JaulAppProvider app, Path appDir, Path appFile, MediaType packaging, Preferences p) {
 
 		Logging.info("App :");
-		Logging.info("   ID: {}", app.id());
-		Logging.info("   Updates URL: {}", app.updatesUrl());
-		Logging.info("   Launcher ID: {}", app.updaterId());
-		Logging.info("   Packaging: {}", packaging);
-		Logging.info("   Category: {}", app.category().name());
-		Logging.info("   Dir: {}", appDir.toAbsolutePath().toString());
+		Logging.info("   ID: {0}", app.id());
+		Logging.info("   Updates URL: {0}", app.updatesUrl());
+		Logging.info("   Launcher ID: {}0", app.updaterId());
+		Logging.info("   Packaging: {0}", packaging);
+		Logging.info("   Category: {0}", app.category().name());
+		Logging.info("   Dir: {0}", appDir.toAbsolutePath().toString());
 		var appNode = p.node(app.id());
 		try {
 			appNode.put("updatesUrl", app.updatesUrl());
@@ -491,7 +501,6 @@ public class AppRegistry {
 			appNode.put("id", app.id());
 			appNode.put("appDir", appDir.toAbsolutePath().toString());
 			appNode.flush();
-			Thread.sleep(5000);
 		} catch (Exception ioe) {
 			Logging.warn("Cannot register app.", ioe);
 		}

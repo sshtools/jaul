@@ -320,7 +320,7 @@ public class UpdateDescriptor {
 					}
 				}
 				if (mediaType == null) {
-					Logging.warn("Skipping {} in descriptor, it doesn't match any media type.", fileName);
+					Logging.warn("Skipping {0} in descriptor, it doesn't match any media type.", fileName);
 					continue;
 				}
 
@@ -332,7 +332,7 @@ public class UpdateDescriptor {
 					}
 				}
 				if (mediaOs == null) {
-					Logging.warn("Skipping {} in descriptor, it doesn't match any OS.", fileName);
+					Logging.warn("Skipping {0} in descriptor, it doesn't match any OS.", fileName);
 					continue;
 				}
 
