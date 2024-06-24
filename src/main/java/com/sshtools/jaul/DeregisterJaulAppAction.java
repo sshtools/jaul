@@ -41,10 +41,10 @@ public class DeregisterJaulAppAction extends AbstractUninstallAction {
 
 	protected void doRegister(UninstallerContext context, int updaterId) {
 		if(Util.hasFullAdminRights()) {
-			new CallDeregister(jaulAppId).execute();
+			new CallDeregister(getJaulAppId()).execute();
 		}
 		else {
-			context.runElevated(new CallDeregister(jaulAppId), true);
+			context.runElevated(new CallDeregister(getJaulAppId()), true);
 		}
 	}
 

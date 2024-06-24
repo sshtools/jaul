@@ -21,10 +21,10 @@ public class RegisterJaulAppAction extends AbstractInstallAction {
 	public boolean install(InstallerContext context) throws UserCanceledException {
 		try {
 			if(Util.hasFullAdminRights()) {
-				new CallRegister(updatesXmlLocation, jaulAppId, appCategory, Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()).execute();
+				new CallRegister(getUpdatesXmlLocation(), getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()).execute();
 			}
 			else {
-				context.runElevated(new CallRegister(updatesXmlLocation, jaulAppId, appCategory, Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()), true);
+				context.runElevated(new CallRegister(getUpdatesXmlLocation(), getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()), true);
 			}
 		} catch (Exception e) {
 			Logger.getInstance().error(this, e.getMessage());
