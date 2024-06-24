@@ -83,6 +83,14 @@ public class AppRegistry {
 		public final Phase getPhase() {
 			return Phase.valueOf(getAppPreferences().get(AppRegistry.KEY_PHASE, Phase.STABLE.name()));
 		}
+		
+		public final boolean isAutomaticUpdates() {
+			return getAppPreferences().getBoolean(AppRegistry.KEY_AUTOMATIC_UPDATES, true);
+		}
+		
+		public final void setAutomaticUpdates(boolean automaticUpdates) {
+			getAppPreferences().putBoolean(AppRegistry.KEY_AUTOMATIC_UPDATES, automaticUpdates);
+		}
 
 		public final void setPhase(Phase phase) {
 			var node = getAppPreferences();
