@@ -12,7 +12,7 @@ import com.sshtools.jaul.UpdateDescriptor.MediaType;
 @SuppressWarnings("serial")
 public class RegisterJaulAppAction extends AbstractInstallAction {
 
-	private String updatesXmlLocation = "${compiler:install4j.updatesBase}/${compiler:install4j.phase}/updates.xml";
+	private String updatesBase = "${compiler:install4j.updatesBase}";
 	private String updaterId = "${compiler:install4j.jaulUpdaterId}";
 	private String jaulAppId = "${compiler:install4j.jaulAppId}";
 	private AppCategory appCategory;
@@ -21,10 +21,10 @@ public class RegisterJaulAppAction extends AbstractInstallAction {
 	public boolean install(InstallerContext context) throws UserCanceledException {
 		try {
 			if(Util.hasFullAdminRights()) {
-				new CallRegister(getUpdatesXmlLocation(), getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()).execute();
+				new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()).execute();
 			}
 			else {
-				context.runElevated(new CallRegister(getUpdatesXmlLocation(), getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()), true);
+				context.runElevated(new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()), true);
 			}
 		} catch (Exception e) {
 			Logger.getInstance().error(this, e.getMessage());
@@ -58,11 +58,11 @@ public class RegisterJaulAppAction extends AbstractInstallAction {
 		this.appCategory = appCategory;
 	}
 
-	public String getUpdatesXmlLocation() {
-		return replaceWithTextOverride("updatesXmlLocation", replaceVariables(this.updatesXmlLocation), String.class);
+	public String getUpdatesBase() {
+		return replaceWithTextOverride("updatesBase", replaceVariables(this.updatesBase), String.class);
 	}
 
-	public void setUpdatesXmlLocation(String updatesXmlLocation) {
-		this.updatesXmlLocation = updatesXmlLocation;
+	public void setUpdatesBase(String updatesBase) {
+		this.updatesBase = updatesBase;
 	}
 }
