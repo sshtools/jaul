@@ -285,10 +285,10 @@ public class AppRegistry {
 			}
 		});
 		if (app.getScope() == Scope.SYSTEM) {
-			Logging.info("De-registering as system wide application.");
+			Logging.debug("De-registering as system wide application.");
 			deregister(app, getSystemPreferences());
 		} else {
-			Logging.info("De-registering as user application.");
+			Logging.debug("De-registering as user application.");
 			deregister(app, getUserPreferences());
 		}
 	}
@@ -416,12 +416,12 @@ public class AppRegistry {
 		if (Files.exists(appFile)) {
 			App app;
 			if (!Boolean.getBoolean("jaul.forceUserRegistration") && Util.hasFullAdminRights()) {
-				Logging.info("Registering as system wide application.");
+				Logging.debug("Registering as system wide application.");
 				checkPreferencesDir();
 				app = new App(Scope.SYSTEM,
 						saveToPreferences(jaulApp, appDir, appFile, packaging, getSystemPreferences()));
 			} else {
-				Logging.info("Registering as user application.");
+				Logging.debug("Registering as user application.");
 				app = new App(Scope.USER, saveToPreferences(jaulApp, appDir, appFile, packaging, getUserPreferences()));
 			}
 			var telem = telemetryForApp(app).build();
@@ -493,13 +493,13 @@ public class AppRegistry {
 
 	private Preferences saveToPreferences(JaulAppProvider app, Path appDir, Path appFile, MediaType packaging, Preferences p) {
 
-		Logging.info("App :");
-		Logging.info("   ID: {0}", app.id());
-		Logging.info("   Updates URL: {0}", app.updatesUrl());
-		Logging.info("   Launcher ID: {}0", app.updaterId());
-		Logging.info("   Packaging: {0}", packaging);
-		Logging.info("   Category: {0}", app.category().name());
-		Logging.info("   Dir: {0}", appDir.toAbsolutePath().toString());
+		Logging.debug("App :");
+		Logging.debug("   ID: {0}", app.id());
+		Logging.debug("   Updates URL: {0}", app.updatesUrl());
+		Logging.debug("   Launcher ID: {0}", app.updaterId());
+		Logging.debug("   Packaging: {0}", packaging);
+		Logging.debug("   Category: {0}", app.category().name());
+		Logging.debug("   Dir: {0}", appDir.toAbsolutePath().toString());
 		var appNode = p.node(app.id());
 		try {
 			appNode.put("updatesUrl", app.updatesUrl());
