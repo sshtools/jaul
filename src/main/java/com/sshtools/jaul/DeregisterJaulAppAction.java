@@ -31,7 +31,8 @@ public class DeregisterJaulAppAction extends AbstractUninstallAction {
 			if(updaterId == null)
 				throw new IOException("Could not find updater ID (" + String.join(", ", names));
 			
-			doRegister(context, Integer.parseInt(updaterId));
+			doDeregister(context, Integer.parseInt(updaterId));
+			return true;
 		} catch (Exception e) {
 			Logger.getInstance().error(this, e.getMessage());
 			context.getProgressInterface().showFailure(MessageFormat.format("Failed to register application with Jaul, updates may not work. {0}", e.getMessage()));
@@ -39,7 +40,7 @@ public class DeregisterJaulAppAction extends AbstractUninstallAction {
 		return false;
 	}
 
-	protected void doRegister(UninstallerContext context, int updaterId) {
+	protected void doDeregister(UninstallerContext context, int updaterId) {
 		if(Util.hasFullAdminRights()) {
 			new CallDeregister(getJaulAppId()).execute();
 		}
