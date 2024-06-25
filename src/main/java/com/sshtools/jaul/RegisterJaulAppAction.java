@@ -1,5 +1,13 @@
 package com.sshtools.jaul;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.text.MessageFormat;
 
 import com.install4j.api.Util;
@@ -24,24 +32,49 @@ public class RegisterJaulAppAction extends AbstractInstallAction {
 		try {
 			context.setVariable(PREVIOUS_JAUL_REGISTRATION, getApp(context, getJaulAppId()));
 
-			Logger.getInstance().info(this, "Full: " + Util.hasFullAdminRights() + " Elev: " + context.hasBeenElevated());
-			Logger.getInstance().info(this, "Registering with Jaul as admin user");
+			Logger.getInstance().info(this, "Registering with Jaul");
 			
-//			if(Util.hasFullAdminRights() || context.hasBeenElevated()) {
-//				Logger.getInstance().info(this, "Registering with Jaul as admin user");
 				new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()).execute();
-//				Logger.getInstance().info(this, "Registered with Jaul as admin user");
-//			}
-//			else {
-//				Logger.getInstance().info(this, "Registering with Jaul as elevated user");
-//				context.runElevated(new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()), true);
-//				Logger.getInstance().info(this, "Registered with Jaul as elevated user");
-//			}
-				Logger.getInstance().info(this, "Registered: with Jaul as admin user");
+				Logger.getInstance().info(this, "Registered: with Jaul");
 				
-				App registered = (App)new CallGet(getJaulAppId()).execute();
-				Logger.getInstance().info(this, "Found Registered: " + registered.getId() + " @ " + registered.getScope());
 				
+				if(!Util.isWindows()) {
+					 /* Weird issue where the first install of ANY application results
+					 * in no registration happening. E.g. when building a VM, the first
+					 * Jaul installer in the list is never registered.
+					 * 
+					 * This is because on this first install, the embedded JDK is used, which
+					 * is actually writing preferences to ... 
+					 * 
+					 * $JDK_HOME/jre/.systemPrefs/.....
+					 */
+					Path javahome = Paths.get(System.getProperty("java.home"));
+					Path sysprefs = javahome.resolve(".systemPrefs");
+					Path regprefs = sysprefs.resolve("com/sshtools/jaul/registry");
+					Path etcprefs = Paths.get("/etc/.java/.systemPrefs/com/sshtools/jaul/registry");
+					if(Files.exists(regprefs) && !Files.exists(etcprefs)) {
+						Logger.getInstance().info(this, "Activating weird preferences work-around, copying " + regprefs + " to /etc/.java");
+						Files.createDirectories(etcprefs);
+						Files.walkFileTree(regprefs, new SimpleFileVisitor<Path>() {
+					        @Override
+					        public FileVisitResult preVisitDirectory(final Path dir,
+					                final BasicFileAttributes attrs) throws IOException {
+					            Files.createDirectories(etcprefs.resolve(regprefs
+					                    .relativize(dir)));
+					            return FileVisitResult.CONTINUE;
+					        }
+
+					        @Override
+					        public FileVisitResult visitFile(final Path file,
+					                final BasicFileAttributes attrs) throws IOException {
+					            Files.copy(file,
+					            		etcprefs.resolve(regprefs.relativize(file)));
+					            return FileVisitResult.CONTINUE;
+					        }
+					    });
+						Logger.getInstance().info(this, "Activated weird preferences work-around, copying " + regprefs + " to /etc/.java");
+					}
+				}
 				
 			return true;
 		} catch (Exception e) {

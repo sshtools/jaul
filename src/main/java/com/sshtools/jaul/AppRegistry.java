@@ -414,22 +414,28 @@ public class AppRegistry {
 		var appDir = resolveAppDir();
 		var appFile = appDir.resolve(".install4j").resolve("i4jparams.conf");
 		
-		System.out.println("REMOVEME DEBUG");
-		System.getProperties().forEach((k,v) -> System.out.println("  " + k + " = " + v));
-		System.out.println("SYSPREF: " + getSystemPreferences() + " : " + getSystemPreferences().getClass().toString());
-		System.out.println("USRPREF: " + getUserPreferences() + " : " + getUserPreferences().getClass().toString());
-		
 		if (Files.exists(appFile)) {
 			App app;
-			if (!Boolean.getBoolean("jaul.forceUserRegistration") && Util.hasFullAdminRights()) {
-				Logging.debug("Registering as system wide application.");
-				checkPreferencesDir();
-				app = new App(Scope.SYSTEM,
-						saveToPreferences(jaulApp, appDir, appFile, packaging, getSystemPreferences()));
-			} else {
-				Logging.debug("Registering as user application.");
-				app = new App(Scope.USER, saveToPreferences(jaulApp, appDir, appFile, packaging, getUserPreferences()));
+			try {
+				if (!Boolean.getBoolean("jaul.forceUserRegistration") && Util.hasFullAdminRights()) {
+					Logging.debug("Registering as system wide application.");
+					checkPreferencesDir();
+					app = new App(Scope.SYSTEM,
+							saveToPreferences(jaulApp, appDir, appFile, packaging, getSystemPreferences()));
+					
+					Preferences.systemRoot().flush();
+				} else {
+					Logging.debug("Registering as user application.");
+					app = new App(Scope.USER, saveToPreferences(jaulApp, appDir, appFile, packaging, getUserPreferences()));
+					
+	
+					Preferences.userRoot().flush();
+				}
 			}
+			catch(BackingStoreException bse) {
+				throw new IllegalStateException("Failed to flush preferences for application registration.", bse);
+			}
+			
 			var telem = telemetryForApp(app).build();
 			telem.event(telem.builder().
 					withType(Type.REGISTER).
