@@ -3,6 +3,7 @@ module com.sshtools.jaul {
 	requires transitive java.prefs;
 	requires java.xml;
 	requires java.net.http;
+	requires java.logging;
 	opens com.sshtools.jaul;
 	exports com.sshtools.jaul;
 }

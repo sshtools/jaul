@@ -1,30 +1,31 @@
 package com.sshtools.jaul;
 
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
+import java.text.MessageFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Logging {
 
-	static Logger log = System.getLogger(JaulApp.class.getName());
+	static Logger log = Logger.getLogger(JaulApp.class.getName());
 
 	public static void info(String pattern, Object... args) {
-		log.log(Level.INFO, pattern, args);
+		log.info(args.length == 0 ? pattern : MessageFormat.format(pattern, args));
 	}
 	
 	public static void debug(String pattern, Object... args) {
-		log.log(Level.DEBUG, pattern, args);
+		log.fine(args.length == 0 ? pattern : MessageFormat.format(pattern, args));
 	}
 	
 	public static void warn(String pattern, Object... args) {
-		log.log(Level.WARNING, pattern, args);
+		log.warning(args.length == 0 ? pattern : MessageFormat.format(pattern, args));
 	}
 	
 	public static void error(String pattern, Object... args) {
-		log.log(Level.ERROR, pattern, args);
+		log.severe(args.length == 0 ? pattern : MessageFormat.format(pattern, args));
 	}
 
 	public static boolean isDebugEnabled() {
-		return log.isLoggable(Level.DEBUG);
+		return log.isLoggable(Level.FINE);
 	}
 	
 	

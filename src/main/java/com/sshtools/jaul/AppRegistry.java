@@ -413,6 +413,12 @@ public class AppRegistry {
 	public App register(JaulAppProvider jaulApp, MediaType packaging) {
 		var appDir = resolveAppDir();
 		var appFile = appDir.resolve(".install4j").resolve("i4jparams.conf");
+		
+		System.out.println("REMOVEME DEBUG");
+		System.getProperties().forEach((k,v) -> System.out.println("  " + k + " = " + v));
+		System.out.println("SYSPREF: " + getSystemPreferences() + " : " + getSystemPreferences().getClass().toString());
+		System.out.println("USRPREF: " + getUserPreferences() + " : " + getUserPreferences().getClass().toString());
+		
 		if (Files.exists(appFile)) {
 			App app;
 			if (!Boolean.getBoolean("jaul.forceUserRegistration") && Util.hasFullAdminRights()) {
