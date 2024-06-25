@@ -37,6 +37,12 @@ public class RegisterJaulAppAction extends AbstractInstallAction {
 //				context.runElevated(new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()), true);
 //				Logger.getInstance().info(this, "Registered with Jaul as elevated user");
 //			}
+				Logger.getInstance().info(this, "Registered: with Jaul as admin user");
+				
+				App registered = (App)new CallGet(getJaulAppId()).execute();
+				Logger.getInstance().info(this, "Found Registered: " + registered.getId() + " @ " + registered.getScope());
+				
+				
 			return true;
 		} catch (Exception e) {
 			Logger.getInstance().error(this, e.getMessage());
