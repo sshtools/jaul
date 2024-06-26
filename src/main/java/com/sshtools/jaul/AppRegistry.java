@@ -21,6 +21,13 @@ import com.sshtools.jaul.Telemetry.TelemetryBuilder;
 import com.sshtools.jaul.TelemetryEvent.Type;
 import com.sshtools.jaul.UpdateDescriptor.MediaType;
 
+import uk.co.bithatch.nativeimage.annotations.OtherSerializable;
+import uk.co.bithatch.nativeimage.annotations.OtherSerializables;
+import uk.co.bithatch.nativeimage.annotations.Serialization;
+
+@OtherSerializables(
+	@OtherSerializable(String.class)
+)
 public class AppRegistry {
 	
 	static void checkPreferencesDir() {
@@ -153,6 +160,7 @@ public class AppRegistry {
 	public final static String KEY_AUTOMATIC_UPDATES = "automaticUpdates";
 	public final static String KEY_DEFER = "updatesDeferredUntil";
 
+	@Serialization
 	public enum Scope {
 		USER, SYSTEM
 	}

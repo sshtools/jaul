@@ -21,8 +21,11 @@ import org.xml.sax.SAXException;
 
 import com.install4j.api.Util;
 
+import uk.co.bithatch.nativeimage.annotations.Serialization;
+
 public class UpdateDescriptor {
 
+	@Serialization
 	public enum MediaType {
 		INSTALLER, RPM, DEB, ARCHIVE;
 
@@ -42,6 +45,7 @@ public class UpdateDescriptor {
 		}
 	}
 
+	@Serialization
 	public enum MediaOS {
 		LINUX, WINDOWS, MACOS, UNIX;
 
@@ -71,6 +75,7 @@ public class UpdateDescriptor {
 		}
 	}
 
+	@Serialization
 	public enum MediaArch {
 		X86, X86_64, ARM32, AARCH64, XPLATFORM;
 

@@ -5,9 +5,13 @@ import java.io.Serializable;
 import com.sshtools.jaul.AppRegistry.Scope;
 import com.sshtools.jaul.UpdateDescriptor.MediaType;
 
+import uk.co.bithatch.nativeimage.annotations.Serialization;
+
 @SuppressWarnings("serial")
+@Serialization
 public class TelemetryEvent implements Serializable {
-	
+
+	@Serialization
 	public enum Type {
 		LAUNCH, SHUTDOWN, UPDATE_CHECK, UPDATE, REGISTER, DEREGISTER, CUSTOM
 	}
