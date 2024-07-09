@@ -64,11 +64,11 @@ public class AppRegistry {
 			this.scope = scope;
 			id = node.get("id", "unknown");
 			if (id.equals(""))
-				throw new IllegalArgumentException("Invalid app data, missing ID.");
+				throw new IllegalArgumentException("Invalid app data, missing ID (scope = " + scope + ").");
 			this.appPreferences = id.replace('.', '/');
 			var dirPath = node.get("appDir", "");
 			if (dirPath.equals(""))
-				throw new IllegalArgumentException("Invalid app data, missing directory.");
+				throw new IllegalArgumentException("Invalid app data, missing directory (scope = " + scope + " id = " + id + ".");
 			dir = dirPath;
 			launcherId = node.get("launcherId", "");
 			if (launcherId.equals(""))
