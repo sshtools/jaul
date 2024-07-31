@@ -98,9 +98,8 @@ public abstract class AbstractUpdateService implements UpdateService {
 
 	@Override
 	public final void rescheduleCheck() {
-		cancelTask();
 		deferUntil = context.getUpdatesDeferredUntil();
-		rescheduleCheck(TimeUnit.SECONDS.toMillis(6));
+		rescheduleCheck(0);
 	}
 	
 	@Override
@@ -133,7 +132,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 				+ (long) (Math.random() * 3.0d * (double) TimeUnit.HOURS.toMillis(3));
 		setDeferUntil(when);
 		try {
-			rescheduleCheck(0);
+			rescheduleCheck(-1);
 			Logging.info("Deferred update until " + DateFormat.getDateTimeInstance().format(new Date(when)));
 		}
 		catch(UnsupportedOperationException uoe) {
@@ -162,9 +161,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 					DateFormat.getDateTimeInstance().format(new Date(defer))));
 			checkTask = context.getScheduler().schedule(() -> timedCheck(), when, TimeUnit.MILLISECONDS);
 		} else {
-			if (nonDeferredDelay == 0) {
-				configDeferUpdate();
-			} else
+			if(nonDeferredDelay > 0) 
 				checkTask = context.getScheduler().schedule(() -> timedCheck(), nonDeferredDelay,
 						TimeUnit.MILLISECONDS);
 		}
