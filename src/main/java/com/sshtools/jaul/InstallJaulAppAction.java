@@ -38,7 +38,7 @@ public class InstallJaulAppAction extends AbstractInstallAction {
 				Logger.getInstance().info(this, MessageFormat.format("{0} is installed, version {1}.", actualJaulAppId, appDef.getVersion()));
 				installedVersion = Optional.of(appDef.getVersion());
 			}
-			catch(IllegalStateException iae) {
+			catch(IllegalStateException | IllegalArgumentException iae) {
 				/* Not installed */
 				Logger.getInstance().info(this, MessageFormat.format("{0} is not installed, will try to download.", actualJaulAppId));
 			}
