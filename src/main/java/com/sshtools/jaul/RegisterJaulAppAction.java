@@ -1,6 +1,13 @@
 package com.sshtools.jaul;
 
-import java.io.File;
+import com.install4j.api.Util;
+import com.install4j.api.actions.AbstractInstallAction;
+import com.install4j.api.context.InstallerContext;
+import com.install4j.api.context.UserCanceledException;
+import com.install4j.runtime.installer.helper.Logger;
+import com.sshtools.jaul.AppRegistry.App;
+import com.sshtools.jaul.UpdateDescriptor.MediaType;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -9,14 +16,6 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.text.MessageFormat;
-
-import com.install4j.api.Util;
-import com.install4j.api.actions.AbstractInstallAction;
-import com.install4j.api.context.InstallerContext;
-import com.install4j.api.context.UserCanceledException;
-import com.install4j.runtime.installer.helper.Logger;
-import com.sshtools.jaul.AppRegistry.App;
-import com.sshtools.jaul.UpdateDescriptor.MediaType;
 
 @SuppressWarnings("serial")
 public class RegisterJaulAppAction extends AbstractInstallAction {
@@ -34,7 +33,19 @@ public class RegisterJaulAppAction extends AbstractInstallAction {
 
 			Logger.getInstance().info(this, "Registering with Jaul");
 			
-				new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()).execute();
+				var callRegister = new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", 
+                    getJaulAppId(), 
+                    getAppCategory(), 
+                    Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, 
+                    context.getInstallationDirectory().getAbsolutePath());
+				
+				if(Util.hasFullAdminRights()) {
+	                callRegister.execute();
+	            }
+	            else {
+	                context.runElevated(callRegister, true);
+	            }
+				
 				Logger.getInstance().info(this, "Registered: with Jaul");
 				
 				

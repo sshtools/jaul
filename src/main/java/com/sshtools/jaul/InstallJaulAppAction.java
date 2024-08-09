@@ -40,6 +40,7 @@ public class InstallJaulAppAction extends AbstractInstallAction {
 			}
 			catch(IllegalStateException | IllegalArgumentException iae) {
 				/* Not installed */
+			    Logger.getInstance().log(iae);
 				Logger.getInstance().info(this, MessageFormat.format("{0} is not installed, will try to download.", actualJaulAppId));
 			}
 			
