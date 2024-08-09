@@ -31,7 +31,7 @@ public class RegisterJaulAppAction extends AbstractInstallAction {
 		try {
 			context.setVariable(PREVIOUS_JAUL_REGISTRATION, getApp(context, getJaulAppId()));
 
-			Logger.getInstance().info(this, "Registering with Jaul");
+			Logger.getInstance().info(this, "Registering with Jaul (admin = " + Util.hasFullAdminRights() + ")");
 			
 				var callRegister = new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", 
                     getJaulAppId(), 
