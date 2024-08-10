@@ -18,7 +18,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.text.MessageFormat;
 
 @SuppressWarnings("serial")
-public class RegisterJaulAppAction extends AbstractInstallAction {
+public class RegisterJaulAppAction extends AbstractInstallAction implements JaulI4JAction {
 
 	private static final String PREVIOUS_JAUL_REGISTRATION = "previousJaulRegistration";
 	private String updatesBase = "${compiler:install4j.updatesBase}";
@@ -28,71 +28,74 @@ public class RegisterJaulAppAction extends AbstractInstallAction {
 
 	@Override
 	public boolean install(InstallerContext context) throws UserCanceledException {
-		try {
-			context.setVariable(PREVIOUS_JAUL_REGISTRATION, getApp(context, getJaulAppId()));
-
-			Logger.getInstance().info(this, "Registering with Jaul (admin = " + Util.hasFullAdminRights() + ")");
-			
-				var callRegister = new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", 
-                    getJaulAppId(), 
-                    getAppCategory(), 
-                    Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, 
-                    context.getInstallationDirectory().getAbsolutePath());
+		return callSilent(Logger.getInstance(), () ->  {
+		
+			try {
+				context.setVariable(PREVIOUS_JAUL_REGISTRATION, getApp(context, getJaulAppId()));
+	
+				Logger.getInstance().info(this, "Registering with Jaul (admin = " + Util.hasFullAdminRights() + ")");
 				
-				if(Util.hasFullAdminRights()) {
-	                callRegister.execute();
-	            }
-	            else {
-	                context.runElevated(callRegister, true);
-	            }
-				
-				Logger.getInstance().info(this, "Registered: with Jaul");
-				
-				
-				if(!Util.isWindows()) {
-					 /* Weird issue where the first install of ANY application results
-					 * in no registration happening. E.g. when building a VM, the first
-					 * Jaul installer in the list is never registered.
-					 * 
-					 * This is because on this first install, the embedded JDK is used, which
-					 * is actually writing preferences to ... 
-					 * 
-					 * $JDK_HOME/jre/.systemPrefs/.....
-					 */
-					Path javahome = Paths.get(System.getProperty("java.home"));
-					Path sysprefs = javahome.resolve(".systemPrefs");
-					Path regprefs = sysprefs.resolve("com/sshtools/jaul/registry");
-					Path etcprefs = Paths.get("/etc/.java/.systemPrefs/com/sshtools/jaul/registry");
-					if(Files.exists(regprefs) && !Files.exists(etcprefs)) {
-						Logger.getInstance().info(this, "Activating weird preferences work-around, copying " + regprefs + " to /etc/.java");
-						Files.createDirectories(etcprefs);
-						Files.walkFileTree(regprefs, new SimpleFileVisitor<Path>() {
-					        @Override
-					        public FileVisitResult preVisitDirectory(final Path dir,
-					                final BasicFileAttributes attrs) throws IOException {
-					            Files.createDirectories(etcprefs.resolve(regprefs
-					                    .relativize(dir)));
-					            return FileVisitResult.CONTINUE;
-					        }
-
-					        @Override
-					        public FileVisitResult visitFile(final Path file,
-					                final BasicFileAttributes attrs) throws IOException {
-					            Files.copy(file,
-					            		etcprefs.resolve(regprefs.relativize(file)));
-					            return FileVisitResult.CONTINUE;
-					        }
-					    });
-						Logger.getInstance().info(this, "Activated weird preferences work-around, copying " + regprefs + " to /etc/.java");
+					var callRegister = new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", 
+	                    getJaulAppId(), 
+	                    getAppCategory(), 
+	                    Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, 
+	                    context.getInstallationDirectory().getAbsolutePath());
+					
+					if(Util.hasFullAdminRights()) {
+		                callRegister.execute();
+		            }
+		            else {
+		                context.runElevated(callRegister, true);
+		            }
+					
+					Logger.getInstance().info(this, "Registered: with Jaul");
+					
+					
+					if(!Util.isWindows()) {
+						 /* Weird issue where the first install of ANY application results
+						 * in no registration happening. E.g. when building a VM, the first
+						 * Jaul installer in the list is never registered.
+						 * 
+						 * This is because on this first install, the embedded JDK is used, which
+						 * is actually writing preferences to ... 
+						 * 
+						 * $JDK_HOME/jre/.systemPrefs/.....
+						 */
+						Path javahome = Paths.get(System.getProperty("java.home"));
+						Path sysprefs = javahome.resolve(".systemPrefs");
+						Path regprefs = sysprefs.resolve("com/sshtools/jaul/registry");
+						Path etcprefs = Paths.get("/etc/.java/.systemPrefs/com/sshtools/jaul/registry");
+						if(Files.exists(regprefs) && !Files.exists(etcprefs)) {
+							Logger.getInstance().info(this, "Activating weird preferences work-around, copying " + regprefs + " to /etc/.java");
+							Files.createDirectories(etcprefs);
+							Files.walkFileTree(regprefs, new SimpleFileVisitor<Path>() {
+						        @Override
+						        public FileVisitResult preVisitDirectory(final Path dir,
+						                final BasicFileAttributes attrs) throws IOException {
+						            Files.createDirectories(etcprefs.resolve(regprefs
+						                    .relativize(dir)));
+						            return FileVisitResult.CONTINUE;
+						        }
+	
+						        @Override
+						        public FileVisitResult visitFile(final Path file,
+						                final BasicFileAttributes attrs) throws IOException {
+						            Files.copy(file,
+						            		etcprefs.resolve(regprefs.relativize(file)));
+						            return FileVisitResult.CONTINUE;
+						        }
+						    });
+							Logger.getInstance().info(this, "Activated weird preferences work-around, copying " + regprefs + " to /etc/.java");
+						}
 					}
-				}
-				
-			return true;
-		} catch (Exception e) {
-			Logger.getInstance().error(this, e.getMessage());
-			context.getProgressInterface().showFailure(MessageFormat.format("Failed to register application with Jaul, updates may not work. {0}", e.getMessage()));
-		}
-		return false;
+					
+				return true;
+			} catch (Exception e) {
+				Logger.getInstance().error(this, e.getMessage());
+				context.getProgressInterface().showFailure(MessageFormat.format("Failed to register application with Jaul, updates may not work. {0}", e.getMessage()));
+			}
+			return false;
+		});
 	}
 
     @Override
