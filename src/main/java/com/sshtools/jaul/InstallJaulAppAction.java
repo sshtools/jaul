@@ -15,7 +15,7 @@ import com.sshtools.jaul.UpdateDescriptor.Media;
 import com.sshtools.jaul.UpdateDescriptor.MediaKey;
 
 @SuppressWarnings("serial")
-public class InstallJaulAppAction extends AbstractInstallAction {
+public class InstallJaulAppAction extends AbstractInstallAction implements JaulI4JAction  {
 
 	private String updatesXmlLocation;
 	private String jaulAppId;
@@ -25,57 +25,60 @@ public class InstallJaulAppAction extends AbstractInstallAction {
 
 	@Override
 	public boolean install(InstallerContext context) throws UserCanceledException {
-		try {
-			/* First try to see if the app is already installed, and get what version
-			 * it is at if it is.
-			 */
-			Optional<String> installedVersion = Optional.empty();
-			
-			var actualJaulAppId = replaceVariables(jaulAppId);
+		return callSilent(Logger.getInstance(), () ->  {
 			try {
-				var app= AppRegistry.get().get(actualJaulAppId);
-				var appDef  = new LocalAppDef(app);
-				Logger.getInstance().info(this, MessageFormat.format("{0} is installed, version {1}.", actualJaulAppId, appDef.getVersion()));
-				installedVersion = Optional.of(appDef.getVersion());
-			}
-			catch(IllegalStateException | IllegalArgumentException iae) {
-				/* Not installed */
-			    Logger.getInstance().log(iae);
-				Logger.getInstance().info(this, MessageFormat.format("{0} is not installed, will try to download.", actualJaulAppId));
-			}
-			
-			var uri = URI.create(replaceVariables(updatesXmlLocation));
-			Logger.getInstance().info(this, MessageFormat.format("Getting {0} from {1}", actualJaulAppId, uri));
-			var desc = UpdateDescriptor.get(uri);
-			var key = MediaKey.get();
-			var mediaOr = desc.find(key);
-			if(mediaOr.isPresent()) {
-				var media = mediaOr.get();
-				if(installedVersion.isEmpty()) {
-					Logger.getInstance().info(this, MessageFormat.format("{0} is being installed because it is not installed.", actualJaulAppId));
-					doInstall(context, media);
+				/* First try to see if the app is already installed, and get what version
+				 * it is at if it is.
+				 */
+				Optional<String> installedVersion = Optional.empty();
+				
+				var actualJaulAppId = replaceVariables(jaulAppId);
+				try {
+					var app= AppRegistry.get().get(actualJaulAppId);
+					var appDef  = new LocalAppDef(app);
+					Logger.getInstance().info(this, MessageFormat.format("{0} is installed, version {1}.", actualJaulAppId, appDef.getVersion()));
+					installedVersion = Optional.of(appDef.getVersion());
 				}
-				else if(forceReinstall) {
-					Logger.getInstance().info(this, MessageFormat.format("{0} is being installed because forceReinstall was set.", actualJaulAppId));
-					doInstall(context, media);
+				catch(IllegalStateException | IllegalArgumentException iae) {
+					/* Not installed */
+				    Logger.getInstance().log(iae);
+					Logger.getInstance().info(this, MessageFormat.format("{0} is not installed, will try to download.", actualJaulAppId));
 				}
-				else if(!installedVersion.get().equals(media.version())) {
-					Logger.getInstance().info(this, MessageFormat.format("{0} is being installed because version {1} differs from version {2}.", actualJaulAppId, installedVersion.get(), media.version()));
-					doInstall(context, media);
+				
+				var uri = URI.create(replaceVariables(updatesXmlLocation));
+				Logger.getInstance().info(this, MessageFormat.format("Getting {0} from {1}", actualJaulAppId, uri));
+				var desc = UpdateDescriptor.get(uri);
+				Logger.getInstance().info(this, MessageFormat.format("Got {0} from {1}", actualJaulAppId, uri));
+				var key = MediaKey.get();
+				var mediaOr = desc.find(key);
+				if(mediaOr.isPresent()) {
+					var media = mediaOr.get();
+					if(installedVersion.isEmpty()) {
+						Logger.getInstance().info(this, MessageFormat.format("{0} is being installed because it is not installed.", actualJaulAppId));
+						doInstall(context, media);
+					}
+					else if(forceReinstall) {
+						Logger.getInstance().info(this, MessageFormat.format("{0} is being installed because forceReinstall was set.", actualJaulAppId));
+						doInstall(context, media);
+					}
+					else if(!installedVersion.get().equals(media.version())) {
+						Logger.getInstance().info(this, MessageFormat.format("{0} is being installed because version {1} differs from version {2}.", actualJaulAppId, installedVersion.get(), media.version()));
+						doInstall(context, media);
+					}
+					else {
+						Logger.getInstance().error(this, MessageFormat.format("Available version {0} is same as installed {1}, ignoring.", key, installedVersion.orElse("<none>"), media.version()));
+					}
+					return true;
 				}
 				else {
-					Logger.getInstance().error(this, MessageFormat.format("Available version {0} is same as installed {1}, ignoring.", key, installedVersion.orElse("<none>"), media.version()));
+					throw new IOException(MessageFormat.format("Did not find any media for {0}", key));
 				}
-				return true;
+			} catch (Exception e) {
+				Logger.getInstance().error(this, e.getMessage());
+				context.getProgressInterface().showFailure(MessageFormat.format("Failed to install companion application. {0}", e.getMessage()));
 			}
-			else {
-				throw new IOException(MessageFormat.format("Did not find any media for {0}", key));
-			}
-		} catch (Exception e) {
-			Logger.getInstance().error(this, e.getMessage());
-			context.getProgressInterface().showFailure(MessageFormat.format("Failed to install companion application. {0}", e.getMessage()));
-		}
-		return false;
+			return false;
+		});
 	}
 
 	protected void doInstall(InstallerContext context, Media media) {
