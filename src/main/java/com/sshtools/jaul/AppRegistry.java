@@ -425,7 +425,11 @@ public class AppRegistry {
 		if (Files.exists(appFile)) {
 			App app;
 			try {
-				if (!Boolean.getBoolean("jaul.forceUserRegistration") && Util.hasFullAdminRights()) {
+				var forceUserRegistration = Boolean.getBoolean("jaul.forceUserRegistration");
+				var fullAdmin = Util.hasFullAdminRights();
+				var adminGroup = Util.isAdminGroup();
+				Logging.debug("Force user registration: " + forceUserRegistration + " Full admin: " + fullAdmin + " Admin gorup: " + adminGroup);
+				if (!forceUserRegistration && ( fullAdmin || adminGroup)) {
 					Logging.debug("Registering as system wide application.");
 					checkPreferencesDir();
 					app = new App(Scope.SYSTEM,
