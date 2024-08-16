@@ -20,7 +20,7 @@ public @interface JaulApp  {
 	 * @return category
 	 */
 	@Deprecated(since = "0.9.11")
-	AppCategory category();
+	AppCategory category() default AppCategory.HYBRID;
 
 	/**
 	 * Deprecated. These details should be registered at install time by either
@@ -29,7 +29,7 @@ public @interface JaulApp  {
 	 * @return category
 	 */
 	@Deprecated(since = "0.9.11")
-	String updatesUrl();
+	String updatesUrl() default "";
 
 	/**
 	 * Deprecated. These details should be registered at install time by either
@@ -38,5 +38,5 @@ public @interface JaulApp  {
 	 * @return category
 	 */
 	@Deprecated(since = "0.9.11")
-	String updaterId();
+	String updaterId() default "";
 }
