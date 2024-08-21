@@ -78,6 +78,10 @@ public class AppRegistry {
 			updatesUrl = descriptorStr.equals("") ? null : descriptorStr;
 			category = AppCategory.valueOf(node.get("category", AppCategory.GUI.name()));
 		}
+		
+		public LocalAppDef asLocalApp() {
+		    return new LocalAppDef(this);
+		}
 
 		public final MediaType getPackaging() {
 			return packaging;
