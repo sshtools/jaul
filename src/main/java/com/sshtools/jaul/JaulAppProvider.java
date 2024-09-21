@@ -12,7 +12,14 @@ public interface JaulAppProvider {
 	
 	String updaterId();
 	
+	String[] branches();
+
+	
 	static JaulAppProvider fromStatic(String id, AppCategory category, String updatesUrl, String updaterId) {
+		return fromStatic(id, category, updatesUrl, updaterId);
+	}
+	
+	static JaulAppProvider fromStatic(String id, AppCategory category, String updatesUrl, String updaterId, String... branches) {
 		return new JaulAppProvider() {
 			
 			@Override
@@ -33,6 +40,11 @@ public interface JaulAppProvider {
 			@Override
 			public AppCategory category() {
 				return category;
+			}
+
+			@Override
+			public String[] branches() {
+				return branches;
 			}
 		};
 	}
@@ -63,6 +75,11 @@ public interface JaulAppProvider {
 			@Override
 			public AppCategory category() {
 				return jaulApp.category();
+			}
+
+			@Override
+			public String[] branches() {
+				return new String[0];
 			}
 		};
 	}

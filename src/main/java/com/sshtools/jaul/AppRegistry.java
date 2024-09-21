@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
+import java.util.stream.Collectors;
 
 import com.install4j.api.Util;
 import com.sshtools.jaul.Telemetry.TelemetryBuilder;
@@ -59,6 +60,7 @@ public class AppRegistry {
 		private final AppCategory category;
 		private final MediaType packaging;
 		private final String appPreferences;
+		private final String[] branches;
 
 		App(Scope scope, Preferences node) {
 			this.scope = scope;
@@ -77,10 +79,15 @@ public class AppRegistry {
 			packaging = MediaType.valueOf(node.get("packaging", MediaType.INSTALLER.name()));
 			updatesUrl = descriptorStr.equals("") ? null : descriptorStr;
 			category = AppCategory.valueOf(node.get("category", AppCategory.GUI.name()));
+			branches = parseBranches(node.get("branches", ""));
 		}
 		
 		public LocalAppDef asLocalApp() {
 		    return new LocalAppDef(this);
+		}
+		
+		public final String[] getBranches() {
+			return branches;
 		}
 
 		public final MediaType getPackaging() {
@@ -526,6 +533,7 @@ public class AppRegistry {
 		Logging.debug("   Updates URL: {0}", app.updatesUrl());
 		Logging.debug("   Launcher ID: {0}", app.updaterId());
 		Logging.debug("   Packaging: {0}", packaging);
+		Logging.debug("   Other Branches: {0}", String.join(", ", app.branches()));
 		Logging.debug("   Category: {0}", app.category().name());
 		Logging.debug("   Dir: {0}", appDir.toAbsolutePath().toString());
 		var appNode = p.node(app.id());
@@ -536,6 +544,7 @@ public class AppRegistry {
 			appNode.put("packaging", packaging.name());
 			appNode.put("id", app.id());
 			appNode.put("appDir", appDir.toAbsolutePath().toString());
+			appNode.put("branches", String.join(",", app.branches()));
 			appNode.flush();
 		} catch (Exception ioe) {
 			Logging.warn("Cannot register app.", ioe);
@@ -559,5 +568,10 @@ public class AppRegistry {
 				return Preferences.userRoot().node(jaulApp.id().replace('.', '/'));
 			}
 		}
+	}
+
+    static String[] parseBranches(String str) {
+    	var l = Arrays.asList(str.split(",")).stream().map(String::trim).collect(Collectors.toList());
+		return l.isEmpty() || (l.size() == 1 && l.get(0).equals("")) ? new String[0] : l.toArray(new String[0]);
 	}
 }

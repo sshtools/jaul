@@ -1,13 +1,5 @@
 package com.sshtools.jaul;
 
-import com.install4j.api.Util;
-import com.install4j.api.actions.AbstractInstallAction;
-import com.install4j.api.context.InstallerContext;
-import com.install4j.api.context.UserCanceledException;
-import com.install4j.runtime.installer.helper.Logger;
-import com.sshtools.jaul.AppRegistry.App;
-import com.sshtools.jaul.UpdateDescriptor.MediaType;
-
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -17,6 +9,14 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.text.MessageFormat;
 
+import com.install4j.api.Util;
+import com.install4j.api.actions.AbstractInstallAction;
+import com.install4j.api.context.InstallerContext;
+import com.install4j.api.context.UserCanceledException;
+import com.install4j.runtime.installer.helper.Logger;
+import com.sshtools.jaul.AppRegistry.App;
+import com.sshtools.jaul.UpdateDescriptor.MediaType;
+
 @SuppressWarnings("serial")
 public class RegisterJaulAppAction extends AbstractInstallAction implements JaulI4JAction {
 
@@ -24,6 +24,7 @@ public class RegisterJaulAppAction extends AbstractInstallAction implements Jaul
 	private String updatesBase = "${compiler:install4j.updatesBase}";
 	private String updaterId = "${compiler:install4j.jaulUpdaterId}";
 	private String jaulAppId = "${compiler:install4j.jaulAppId}";
+	private String branches = "${compiler:install4j.jaulBranches}";
 	private AppCategory appCategory;
 
 	@Override
@@ -39,7 +40,8 @@ public class RegisterJaulAppAction extends AbstractInstallAction implements Jaul
 	                    getJaulAppId(), 
 	                    getAppCategory(), 
 	                    Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, 
-	                    context.getInstallationDirectory().getAbsolutePath());
+	                    context.getInstallationDirectory().getAbsolutePath(),
+	                    AppRegistry.parseBranches(getBranches()));
 					
 					if(Util.hasFullAdminRights()) {
 		                callRegister.execute();
@@ -98,7 +100,7 @@ public class RegisterJaulAppAction extends AbstractInstallAction implements Jaul
 		});
 	}
 
-    @Override
+	@Override
     public void rollback(InstallerContext context) {
     	App was = (App)context.getVariable(PREVIOUS_JAUL_REGISTRATION);
     	if(was == null) {
@@ -135,6 +137,14 @@ public class RegisterJaulAppAction extends AbstractInstallAction implements Jaul
 
 	public void setJaulAppId(String jaulAppId) {
 		this.jaulAppId = jaulAppId;
+	}
+
+	public String getBranches() {
+		return replaceWithTextOverride("branches", replaceVariables(this.branches), String.class);
+	}
+
+	public void setBranches(String branches) {
+		this.branches = branches;
 	}
 
 	public AppCategory getAppCategory() {

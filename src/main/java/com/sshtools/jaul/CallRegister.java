@@ -14,12 +14,13 @@ public final class CallRegister implements RemoteCallable {
 	private int updaterId;
 	private MediaType mediaType;
 	private String installDir;
+	private String[] branches;
 	
 	public CallRegister() {
 	}
 
 	CallRegister(String updatesXmlLocation, String jaulAppId, AppCategory appCategory,
-			int updaterId, MediaType mediaType, String installDir) {
+			int updaterId, MediaType mediaType, String installDir, String... branches) {
 		super();
 		this.updatesXmlLocation = updatesXmlLocation;
 		this.jaulAppId = jaulAppId;
@@ -27,11 +28,12 @@ public final class CallRegister implements RemoteCallable {
 		this.updaterId = updaterId;
 		this.mediaType = mediaType;
 		this.installDir = installDir;
+		this.branches = branches;
 	}
 
 	@Override
 	public Serializable execute() {
-		var appReg = JaulAppProvider.fromStatic(jaulAppId, appCategory, updatesXmlLocation, String.valueOf(updaterId));
+		var appReg = JaulAppProvider.fromStatic(jaulAppId, appCategory, updatesXmlLocation, String.valueOf(updaterId), branches);
 		var was = System.getProperty("install4j.installationDir");
 		try {
 			System.setProperty("install4j.installationDir", installDir);
