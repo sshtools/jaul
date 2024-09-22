@@ -176,4 +176,9 @@ public class LocalAppDef implements AppDef {
 	public final Optional<Path> getUpdater() {
 		return updater;
 	}
+
+	@Override
+	public <A extends AppDef> A forBranch(Optional<String> branch) {
+		throw new UnsupportedOperationException("TODO");
+	}
 }

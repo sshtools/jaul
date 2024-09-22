@@ -52,7 +52,7 @@ public class UpdateDescriptor {
 		public String pattern() {
 			switch (this) {
 			case LINUX:
-				return ".*-linux-.*\\.sh|.*-linux-.*\\.zip|.*-linux-.*\\.tgz|.*-windows-.*\\.tar\\.gz|.*\\.rpm|.*\\.deb";
+				return ".*-linux-.*\\.sh|.*-linux-.*\\.zip|.*-linux-.*\\.tar\\.gz|.*-linux-.*\\.tgz|.*-windows-.*\\.tar\\.gz|.*\\.rpm|.*\\.deb";
 			case WINDOWS:
 				return ".*\\.msi|.*\\.exe|.*-windows-.*\\.zip|.*-windows-.*\\.tgz|.*-windows-.*\\.tar\\.gz";
 			case MACOS:
