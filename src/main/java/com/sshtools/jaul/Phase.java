@@ -1,6 +1,9 @@
 package com.sshtools.jaul;
 
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.prefs.Preferences;
 
 public enum Phase {
@@ -15,6 +18,12 @@ public enum Phase {
 			var appVersion = versions[0];
 			return appVersion == null || appVersion.startsWith("0.") || appVersion.equals("DEV_VERSION") || appVersion.contains("SNAPSHOT") ? Phase.CONTINUOUS : Phase.STABLE;
 		}
+	}
+	
+	public static Phase[] reversePhases() {
+		var l = new ArrayList<Phase>(Arrays.asList(values()));
+		Collections.reverse(l);
+		return l.toArray(new Phase[0]);
 	}
 	
 	public static Phase[] getAvailablePhases() {
