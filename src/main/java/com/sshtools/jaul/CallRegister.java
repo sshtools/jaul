@@ -15,12 +15,13 @@ public final class CallRegister implements RemoteCallable {
 	private MediaType mediaType;
 	private String installDir;
 	private String[] branches;
+	private boolean forceUser;
 	
 	public CallRegister() {
 	}
 
 	CallRegister(String updatesXmlLocation, String jaulAppId, AppCategory appCategory,
-			int updaterId, MediaType mediaType, String installDir, String... branches) {
+			int updaterId, MediaType mediaType, String installDir, boolean forceUser, String... branches) {
 		super();
 		this.updatesXmlLocation = updatesXmlLocation;
 		this.jaulAppId = jaulAppId;
@@ -29,14 +30,17 @@ public final class CallRegister implements RemoteCallable {
 		this.mediaType = mediaType;
 		this.installDir = installDir;
 		this.branches = branches;
+		this.forceUser = forceUser;
 	}
 
 	@Override
 	public Serializable execute() {
 		var appReg = JaulAppProvider.fromStatic(jaulAppId, appCategory, updatesXmlLocation, String.valueOf(updaterId), branches);
 		var was = System.getProperty("install4j.installationDir");
+		var wasForceUser = System.getProperty("jaul.forceUserRegistration");
 		try {
 			System.setProperty("install4j.installationDir", installDir);
+			System.setProperty("jaul.forceUserRegistration", String.valueOf(forceUser));
 			AppRegistry.get().register(appReg, mediaType);
 		}
 		finally {
@@ -44,6 +48,10 @@ public final class CallRegister implements RemoteCallable {
 				System.getProperties().remove("install4j.installationDir");
 			else
 				System.setProperty("install4j.installationDir", was);
+			if(wasForceUser == null)
+				System.getProperties().remove("jaul.forceUserRegistratio");
+			else
+				System.setProperty("jaul.forceUserRegistratio", wasForceUser);
 		}
 		return "";
 	}

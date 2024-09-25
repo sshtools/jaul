@@ -41,6 +41,7 @@ public class RegisterJaulAppAction extends AbstractInstallAction implements Jaul
 	                    getAppCategory(), 
 	                    Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, 
 	                    context.getInstallationDirectory().getAbsolutePath(),
+	                    !Util.hasFullAdminRights(),
 	                    AppRegistry.parseBranches(getBranches()));
 					
 					if(Util.hasFullAdminRights()) {
@@ -115,10 +116,10 @@ public class RegisterJaulAppAction extends AbstractInstallAction implements Jaul
     		if(Util.hasFullAdminRights()) {
 				new CallRegister(was.getUpdatesUrl().get(), getJaulAppId(), 
 						was.getCategory(), Integer.parseInt(was.getLauncherId()), MediaType.INSTALLER, 
-						was.getDir().toString()).execute();
+						was.getDir().toString(), false).execute();
 			}
 			else {
-				context.runElevated(new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath()), true);
+				context.runElevated(new CallRegister(getUpdatesBase() + "/${phase}/updates.xml", getJaulAppId(), getAppCategory(), Integer.parseInt(getUpdaterId()), MediaType.INSTALLER, context.getInstallationDirectory().getAbsolutePath(), true), true);
 			}
     	}
     }
