@@ -27,6 +27,7 @@ public class LocalAppDef implements AppDef {
 	private final Optional<String> icon;
 	private final Optional<Path> uninstall;
 	private final Optional<Path> updater;
+	private final String rawDescriptorURL;
 
 	public LocalAppDef(App app) {
 		this.app = app;
@@ -43,8 +44,8 @@ public class LocalAppDef implements AppDef {
 				name = el.getAttributes().getNamedItem("applicationName").getTextContent();
 				version = el.getAttributes().getNamedItem("applicationVersion").getTextContent();
 				publisher = el.getAttributes().getNamedItem("publisherName").getTextContent();
-				var urlStr= el.getAttributes().getNamedItem("publisherURL").getTextContent();
-				url = urlStr.equals("") ? Optional.empty() :Optional.of(new URL(urlStr));
+				rawDescriptorURL= el.getAttributes().getNamedItem("publisherURL").getTextContent();
+				url = rawDescriptorURL.equals("") ? Optional.empty() :Optional.of(new URL(rawDescriptorURL));
 	
 				var launchers = doc.getDocumentElement().getElementsByTagName("launcher");
 				icon = findIcon(appDir, launchers);
@@ -58,43 +59,72 @@ public class LocalAppDef implements AppDef {
 		updater = optionalPath(resolveUpdater(appDir));
 	}
 	
-	private Path resolveUninstaller(Path appDir) {
-		if(Util.isWindows()) {
-			return appDir.resolve("uninstall.exe");
-		}
-		else if(Util.isMacOS()) {
-			try(var stream = Files.newDirectoryStream(appDir)) {
-				for(var file : stream) {
-					if(file.getFileName().toString().contains("Uninstaller.app")) {
-						return file.resolve("Contents").resolve("MacOS").resolve("JavaApplicationStub");
-					}
-				}
-			}
-			catch(IOException ioe) {
-				throw new IllegalStateException("Failed to list application directory.", ioe);
-			}
-			return null;
-		}
-		else {
-			return appDir.resolve("uninstall");
-		}
+	@Override
+	public <A extends AppDef> A forBranch(Optional<String> branch) {
+		throw new UnsupportedOperationException("TODO");
 	}
 	
-	private Path resolveUpdater(Path appDir) {
-		var i4jDir = appDir.resolve(".install4j");
-		if(Util.isWindows()) {
-			return i4jDir.resolve("updater.exe");
-		}
-		else if(Util.isMacOS()) {
-			return i4jDir.resolve("updater.app").resolve("Contents").resolve("MacOs").resolve("JavaApplicationStub");
-		}
-		else {
-			return i4jDir.resolve("updater");
-		}
+	@Override
+	public AppCategory getCategory() {
+		return app.getCategory();
 	}
 	
-	private Optional<Path> optionalPath(Path path) {
-		return path == null || !Files.exists(path) ? Optional.empty() : Optional.of(path);
+	@Override
+	public URL getDescriptor() {
+		return app.getUpdatesUrl().map(u -> {
+			try {
+				return new URL(u.replace("${phase}", app.getPhase().name().toLowerCase()));
+			} catch (MalformedURLException e) {
+				throw new UncheckedIOException(e);
+			}
+		}).orElseThrow(() -> new IllegalStateException("No update descriptor set."));
+	}
+
+	@Override
+	public Optional<String> getIcon() {
+		return icon;
+	}
+
+	@Override
+	public String getId() {
+		return app.getId();
+	}
+
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public String getPublisher() {
+		return publisher;
+	}
+
+	@Override
+	public String getRawDescriptorURL() {
+		return rawDescriptorURL;
+	}
+
+	public App getRegistryDef() {
+		return app;
+	} 
+	
+	public final Optional<Path> getUninstall() {
+		return uninstall;
+	}
+
+	public final Optional<Path> getUpdater() {
+		return updater;
+	}
+
+	@Override
+	public Optional<URL> getUrl() {
+		return url;
+	}
+
+	@Override
+	public String getVersion() {
+		return version;
 	}
 
 	private Optional<String> findIcon(Path appDir, NodeList launchers) {
@@ -119,66 +149,42 @@ public class LocalAppDef implements AppDef {
 		return Optional.empty();
 	}
 
-	@Override
-	public String getName() {
-		return name;
+	private Optional<Path> optionalPath(Path path) {
+		return path == null || !Files.exists(path) ? Optional.empty() : Optional.of(path);
 	}
 
-	@Override
-	public String getVersion() {
-		return version;
-	}
-
-	@Override
-	public Optional<String> getIcon() {
-		return icon;
-	}
-
-	@Override
-	public String getPublisher() {
-		return publisher;
-	}
-
-	@Override
-	public Optional<URL> getUrl() {
-		return url;
-	} 
-	
-	public App getRegistryDef() {
-		return app;
-	}
-
-	@Override
-	public String getId() {
-		return app.getId();
-	}
-
-	@Override
-	public URL getDescriptor() {
-		return app.getUpdatesUrl().map(u -> {
-			try {
-				return new URL(u.replace("${phase}", app.getPhase().name().toLowerCase()));
-			} catch (MalformedURLException e) {
-				throw new UncheckedIOException(e);
+	private Path resolveUninstaller(Path appDir) {
+		if(Util.isWindows()) {
+			return appDir.resolve("uninstall.exe");
+		}
+		else if(Util.isMacOS()) {
+			try(var stream = Files.newDirectoryStream(appDir)) {
+				for(var file : stream) {
+					if(file.getFileName().toString().contains("Uninstaller.app")) {
+						return file.resolve("Contents").resolve("MacOS").resolve("JavaApplicationStub");
+					}
+				}
 			}
-		}).orElseThrow(() -> new IllegalStateException("No update descriptor set."));
+			catch(IOException ioe) {
+				throw new IllegalStateException("Failed to list application directory.", ioe);
+			}
+			return null;
+		}
+		else {
+			return appDir.resolve("uninstall");
+		}
 	}
 
-	@Override
-	public AppCategory getCategory() {
-		return app.getCategory();
-	}
-
-	public final Optional<Path> getUninstall() {
-		return uninstall;
-	}
-
-	public final Optional<Path> getUpdater() {
-		return updater;
-	}
-
-	@Override
-	public <A extends AppDef> A forBranch(Optional<String> branch) {
-		throw new UnsupportedOperationException("TODO");
+	private Path resolveUpdater(Path appDir) {
+		var i4jDir = appDir.resolve(".install4j");
+		if(Util.isWindows()) {
+			return i4jDir.resolve("updater.exe");
+		}
+		else if(Util.isMacOS()) {
+			return i4jDir.resolve("updater.app").resolve("Contents").resolve("MacOs").resolve("JavaApplicationStub");
+		}
+		else {
+			return i4jDir.resolve("updater");
+		}
 	}
 }

@@ -9,6 +9,8 @@ public interface AppDef {
 	String getId();
 	
 	URL getDescriptor();
+	
+	String getRawDescriptorURL();
 
 	String getName();
 
