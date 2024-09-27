@@ -1,5 +1,6 @@
 package com.sshtools.jaul;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -281,6 +282,9 @@ public class UpdateDescriptor {
 
 			if (response.statusCode() == 200) {
 				return new UpdateDescriptor(response.body());
+
+			} else if (response.statusCode() == 403 || response.statusCode() == 404) {
+				throw new FileNotFoundException(uri.toString());
 
 			} else {
 				throw new IOException("Unexpected response code for " + uri + ". " + response.statusCode());
