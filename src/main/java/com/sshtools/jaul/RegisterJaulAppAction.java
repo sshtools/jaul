@@ -32,7 +32,12 @@ public class RegisterJaulAppAction extends AbstractInstallAction implements Jaul
 		return callSilent(Logger.getInstance(), () ->  {
 		
 			try {
-				context.setVariable(PREVIOUS_JAUL_REGISTRATION, getApp(context, getJaulAppId()));
+				try {
+					context.setVariable(PREVIOUS_JAUL_REGISTRATION, getApp(context, getJaulAppId()));
+				}
+				catch(Exception e) {
+					Logger.getInstance().info(this, "Failed to get previous installation, assuming there wasn't one.");
+				}
 	
 				Logger.getInstance().info(this, "Registering with Jaul (admin = " + Util.hasFullAdminRights() + "). Java home " + System.getProperty("java.home") );
 				
