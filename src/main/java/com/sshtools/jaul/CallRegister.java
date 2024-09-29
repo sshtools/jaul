@@ -1,8 +1,12 @@
 package com.sshtools.jaul;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import com.install4j.api.context.RemoteCallable;
+import com.install4j.runtime.installer.helper.Logger;
 import com.sshtools.jaul.UpdateDescriptor.MediaType;
 
 @SuppressWarnings("serial")
@@ -35,13 +39,50 @@ public final class CallRegister implements RemoteCallable {
 
 	@Override
 	public Serializable execute() {
+		var nastyDebug = Files.exists(Paths.get("/tmp/debug-jaul"));
 		var appReg = JaulAppProvider.fromStatic(jaulAppId, appCategory, updatesXmlLocation, String.valueOf(updaterId), branches);
 		var was = System.getProperty("install4j.installationDir");
 		var wasForceUser = System.getProperty("jaul.forceUserRegistration");
 		try {
 			System.setProperty("install4j.installationDir", installDir);
 			System.setProperty("jaul.forceUserRegistration", String.valueOf(forceUser));
+			if(nastyDebug) {
+				Logger.getInstance().info(this, "-------------------------------------------");
+				Logger.getInstance().info(this, "DEBUG A - WAITING UNTIL /tmp/next exists");
+				Logger.getInstance().info(this, "-------------------------------------------");
+				while(!Files.exists(Paths.get("/tmp/next"))) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						throw new IllegalStateException(e);
+					}
+				}
+				try {
+					Files.deleteIfExists(Paths.get("/tmp/next"));
+				}
+				catch(IOException ioe) {}
+			}
 			AppRegistry.get().register(appReg, mediaType);
+			
+
+			if(nastyDebug) {
+				Logger.getInstance().info(this, "-------------------------------------------");
+				Logger.getInstance().info(this, "DEBUG B - WAITING UNTIL /tmp/next exists");
+				Logger.getInstance().info(this, "-------------------------------------------");
+				while(!Files.exists(Paths.get("/tmp/next"))) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						throw new IllegalStateException(e);
+					}
+				}
+				try {
+					Files.deleteIfExists(Paths.get("/tmp/next"));
+				}
+				catch(IOException ioe) {}
+			}
+			
+			RegisterJaulAppAction.fixPrefs(this);
 		}
 		finally {
 			if(was == null)
