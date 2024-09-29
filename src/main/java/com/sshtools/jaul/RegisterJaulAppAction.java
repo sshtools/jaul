@@ -172,9 +172,11 @@ public class RegisterJaulAppAction extends AbstractInstallAction implements Jaul
 	private App getApp(InstallerContext context, String id) {
 		try {
 			if(Util.hasFullAdminRights()) {
+				Logger.getInstance().info(this, "Getting app directly, we are already admin");
 				return (App)new CallGet(id).execute();
 			}
 			else {
+				Logger.getInstance().info(this, "Elevating to get app, we are not admin");
 				return (App)context.runElevated(new CallGet(id), true);
 			}
 		}
