@@ -104,7 +104,7 @@ public class MacApp {
 			wtr.println("<plist version=\"0.9\">");
 			wtr.println("<dict>");
 
-			wtr.println("<key>CGBundleDisplayName</key>");
+			wtr.println("<key>CFBundleDisplayName</key>");
 			wtr.println("<value>" + appname + "</value>");
 			if(hideDock) {
 				wtr.println("<key>LSUIElement</key>");
@@ -114,12 +114,6 @@ public class MacApp {
 			wtr.println("</plist>");
 		}
 		
-		
-		
-		
-		
-		
-		// TODO Auto-generated method stub
 		
 	}
 
