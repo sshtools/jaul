@@ -137,8 +137,8 @@ public class LocalAppDef implements AppDef {
 			return Optional.of(defaultIcon.toString());
 		}
 		else {
-			/*  I keept forgetting to add an icon.png, so alertnatively try and use `sips`
-			 * to convert the icon for us in a temporary file
+			/*  I kept forgetting to add an icon.png, so alternatively try and use `sips`
+			 * to convert the icon for us into a temporary file
 			 */
 			if(System.getProperty("os.name").toLowerCase().contains("mac")) {
 				var path = appDir.resolve(appname + ".app").resolve("Contents").resolve("Resources").resolve("app.icns");
@@ -179,24 +179,41 @@ public class LocalAppDef implements AppDef {
 	}
 
 	private Path resolveUninstaller(Path appDir) {
-		if(Util.isWindows()) {
+
+		if (Util.isWindows()) {
 			return appDir.resolve("uninstall.exe");
-		}
-		else if(Util.isMacOS()) {
-			try(var stream = Files.newDirectoryStream(appDir)) {
-				for(var file : stream) {
-					if(file.getFileName().toString().contains("Uninstaller.app")) {
-						return file.resolve("Contents").resolve("MacOS").resolve("JavaApplicationStub");
+		} else {
+			if (Util.isMacOS()) {
+
+				try (var stream = Files.newDirectoryStream(appDir)) {
+					for (var file : stream) {
+						if (file.getFileName().toString().contains("Uninstaller.app")) {
+							return file.resolve("Contents").resolve("MacOS").resolve("JavaApplicationStub");
+						}
 					}
+				} catch (IOException ioe) {
+					throw new IllegalStateException("Failed to list application directory.", ioe);
 				}
+			} else {
+				var p = appDir.resolve("uninstall");
+				if(Files.exists(p))
+					return p;
 			}
-			catch(IOException ioe) {
-				throw new IllegalStateException("Failed to list application directory.", ioe);
-			}
+			
+
+			/* No idea why .. but the VPN client on Mac OS (Arm confirmed) is NOT called 
+			 * `Uninstaller.app`. Instead, it is in `.install4j/uninstaller` as a plain application
+			 * with no .app stuff. 
+			 * 
+			 * Use that if it exists.
+			 * 
+			 */
+
+			var path = appDir.resolve(".install4j").resolve("uninstall");
+			if(Files.exists(path))
+				return path;
+			
 			return null;
-		}
-		else {
-			return appDir.resolve("uninstall");
 		}
 	}
 
