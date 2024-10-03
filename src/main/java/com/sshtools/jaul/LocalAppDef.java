@@ -2,6 +2,7 @@ package com.sshtools.jaul;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.ProcessBuilder.Redirect;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -48,7 +49,7 @@ public class LocalAppDef implements AppDef {
 				url = rawDescriptorURL.equals("") ? Optional.empty() :Optional.of(new URL(rawDescriptorURL));
 	
 				var launchers = doc.getDocumentElement().getElementsByTagName("launcher");
-				icon = findIcon(appDir, launchers);
+				icon = findIcon(appDir, name, launchers);
 			} 
 		}
 		catch(IOException | SAXException | ParserConfigurationException murle) {
@@ -127,13 +128,37 @@ public class LocalAppDef implements AppDef {
 		return version;
 	}
 
-	private Optional<String> findIcon(Path appDir, NodeList launchers) {
+	private static Optional<String> findIcon(Path appDir, String appname, NodeList launchers) {
 		
 		/* Grrr. This is because Mac doesn't have the icon as a file anyway when installed. 
 		 * We have to explicitly install it */
 		var defaultIcon = appDir.resolve("icon.png");
 		if(Files.exists(defaultIcon)) {
 			return Optional.of(defaultIcon.toString());
+		}
+		else {
+			/*  I keept forgetting to add an icon.png, so alertnatively try and use `sips`
+			 * to convert the icon for us in a temporary file
+			 */
+			if(System.getProperty("os.name").toLowerCase().contains("mac")) {
+				var path = appDir.resolve(appname + ".app").resolve("Contents").resolve("Resources").resolve("app.icns");
+				if(Files.exists(path)) {
+					try {
+						var tf = Files.createTempFile("appicn", ".png");
+						tf.toFile().deleteOnExit();
+						var p = new ProcessBuilder("sips", "-s", "format", "png", path.toAbsolutePath().toString(), "--out", tf.toAbsolutePath().toString());
+						p.redirectError(Redirect.INHERIT);
+						p.redirectInput(Redirect.INHERIT);
+						var prc = p.start();
+						if(prc.waitFor() != 0)
+							throw new IOException("Unexpected exit value " + prc.exitValue());
+						return Optional.of(tf.toAbsolutePath().toString());
+					}
+					catch(Exception e) {
+					}	
+				}
+				
+			}
 		}
 
 		var i4jDir = appDir.resolve(".install4j");
