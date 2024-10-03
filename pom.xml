@@ -107,7 +107,7 @@
 							<addClasspath>true</addClasspath>
 						</manifest>
 						<manifestEntries>
-							<Install-Action>com.sshtools.jaul.InstallJaulAppAction,com.sshtools.jaul.GetJaulAppAction,com.sshtools.jaul.GetJaulAppInstallDirAction,com.sshtools.jaul.RegisterJaulAppAction,com.sshtools.jaul.DeregisterJaulAppAction</Install-Action>
+							<Install-Action>com.sshtools.jaul.InstallJaulAppAction,com.sshtools.jaul.GetJaulAppAction,com.sshtools.jaul.GetJaulAppInstallDirAction,com.sshtools.jaul.RegisterJaulAppAction,com.sshtools.jaul.DeregisterJaulAppAction,com.sshtools.jaul.CreateMacAppAction</Install-Action>
 						</manifestEntries>
 					</archive>
 				</configuration>
