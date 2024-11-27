@@ -95,7 +95,10 @@ public class AppRegistry {
 		}
 
 		public final Preferences getAppPreferences() {
-			return Preferences.userRoot().node(appPreferences);
+			if(scope == Scope.SYSTEM)
+				return Preferences.systemRoot().node(appPreferences);
+			else
+				return Preferences.userRoot().node(appPreferences);
 		}
 
 		public final Phase getPhase() {
