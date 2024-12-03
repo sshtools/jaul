@@ -101,6 +101,10 @@ public class AppRegistry {
 				return Preferences.userRoot().node(appPreferences);
 		}
 
+		public final Preferences getUserPreferences() {
+			return Preferences.userRoot().node(appPreferences);
+		}
+
 		public final Phase getPhase() {
 			return Phase.valueOf(getAppPreferences().get(AppRegistry.KEY_PHASE, Phase.STABLE.name()));
 		}
@@ -562,6 +566,20 @@ public class AppRegistry {
 	public static Preferences getBestAppPreferences(Optional<App> appDef, Object appInstance) {
 		if (appDef.isPresent()) {
 			return appDef.get().getAppPreferences();
+		} else {
+			var jaulApp = appInstance.getClass().getAnnotation(JaulApp.class);
+			if (jaulApp == null) {
+				return Preferences.systemNodeForPackage(appInstance.getClass())
+						.node(appInstance.getClass().getSimpleName());
+			} else {
+				return Preferences.systemRoot().node(jaulApp.id().replace('.', '/'));
+			}
+		}
+	}
+	
+	public static Preferences getBestUserPreferences(Optional<App> appDef, Object appInstance) {
+		if (appDef.isPresent()) {
+			return appDef.get().getUserPreferences();
 		} else {
 			var jaulApp = appInstance.getClass().getAnnotation(JaulApp.class);
 			if (jaulApp == null) {
