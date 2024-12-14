@@ -14,7 +14,7 @@ public class ArtifactVersion {
 	static Map<String, String> versions = Collections.synchronizedMap(new HashMap<>());
 
 	public static String getVersion(String groupId, String artifactId) {
-		return getVersion(null, groupId, artifactId);
+		return getVersion("*", groupId, artifactId);
 	}
 	
 	public static boolean isDeveloperWorkspace() {
