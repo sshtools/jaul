@@ -45,8 +45,19 @@ public class LocalAppDef implements AppDef {
 				name = el.getAttributes().getNamedItem("applicationName").getTextContent();
 				version = el.getAttributes().getNamedItem("applicationVersion").getTextContent();
 				publisher = el.getAttributes().getNamedItem("publisherName").getTextContent();
-				rawDescriptorURL= el.getAttributes().getNamedItem("publisherURL").getTextContent();
-				url = rawDescriptorURL.equals("") ? Optional.empty() :Optional.of(new URL(rawDescriptorURL));
+				var urlStr = el.getAttributes().getNamedItem("publisherURL").getTextContent();
+				rawDescriptorURL = app.getUpdatesUrl().orElseGet(() -> {
+					var vars = doc.getDocumentElement().getElementsByTagName("variable");
+					for(var i = 0 ; i < vars.getLength(); i++) {
+						var varnd = vars.item(i);
+						var varnm = varnd.getAttributes().getNamedItem("name").getTextContent();
+						if(varnm.equals("sys.updatesUrl")) {
+							return varnd.getAttributes().getNamedItem("value").getTextContent();
+						}
+					}
+					throw new IllegalStateException("Could not determine even a default update URL. This is not a Jaul app.");
+				});
+				url = urlStr.equals("") ? Optional.empty() :Optional.of(new URL(urlStr));
 	
 				var launchers = doc.getDocumentElement().getElementsByTagName("launcher");
 				icon = findIcon(appDir, name, launchers);
@@ -60,9 +71,31 @@ public class LocalAppDef implements AppDef {
 		updater = optionalPath(resolveUpdater(appDir));
 	}
 	
+	private LocalAppDef(App app, String name, String version, String publisher, Optional<URL> url, Optional<String> icon,
+			Optional<Path> uninstall, Optional<Path> updater, String rawDescriptorURL) {
+		super();
+		this.app = app;
+		this.name = name;
+		this.version = version;
+		this.publisher = publisher;
+		this.url = url;
+		this.icon = icon;
+		this.uninstall = uninstall;
+		this.updater = updater;
+		this.rawDescriptorURL = rawDescriptorURL;
+	}
+
+	@SuppressWarnings("unchecked")
 	@Override
 	public <A extends AppDef> A forBranch(Optional<String> branch) {
-		throw new UnsupportedOperationException("TODO");
+		if(branch.isEmpty()) {
+			return (A)this;
+		}
+		else {
+			return (A)new LocalAppDef(app, name, version, publisher, url, icon, uninstall, updater, 
+					rawDescriptorURL.replace("${phase}", branch.get() + "/${phase}")
+			);
+		}
 	}
 	
 	@Override
