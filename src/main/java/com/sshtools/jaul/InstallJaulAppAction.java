@@ -84,10 +84,10 @@ public class InstallJaulAppAction extends AbstractInstallAction implements JaulI
 	protected void doInstall(InstallerContext context, Media media) {
 		var url = media.url();
 		if(Util.hasFullAdminRights() || Util.isAdminGroup()) {
-			new CallInstall(context.getProgressInterface(), url.toExternalForm(), installDir == null ? null : installDir.getAbsolutePath().toString(), unattended).execute();
+			new CallInstall(context.getProgressInterface(), url.toExternalForm(), installDir == null ? null : installDir.getAbsolutePath().toString(), unattended, null).execute();
 		}
 		else {
-			context.runElevated(new CallInstall(null, url.toExternalForm(), installDir == null ? null : installDir.getAbsolutePath().toString(), unattended), true);
+			context.runElevated(new CallInstall(null, url.toExternalForm(), installDir == null ? null : installDir.getAbsolutePath().toString(), unattended, null), true);
 		}
 	}
 

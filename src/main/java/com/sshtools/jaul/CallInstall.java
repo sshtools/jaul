@@ -22,30 +22,34 @@ public final class CallInstall implements RemoteCallable {
 	private String urlText;
 	private String installPath;
 	private boolean unattended;
+	private File installerFile;
 	
 	public CallInstall() {
 		prg = null;
 	}
 
-	CallInstall(ProgressInterface prg, String urlText, String installPath, boolean unattended) {
+	public CallInstall(ProgressInterface prg, String urlText, String installPath, boolean unattended, File installerFile) {
 		this.prg = prg;
 		this.urlText = urlText;
 		this.installPath = installPath;
 		this.unattended = unattended;
+		this.installerFile = installerFile;
 	}
 
 	@Override
 	public Serializable execute() {
 		try {
-			installApp( installPath, unattended, prg, urlText);
+			if(installerFile == null)
+				downloadAndInstallApp( installPath, unattended, prg, urlText);
+			else
+				runInstaller(installPath, unattended, prg, installerFile);
 		} catch (IOException | InterruptedException e) {
 			throw new IllegalStateException("Failed elevated action.", e);
 		}
 		return "";
 	}
 
-
-	static void installApp(String installDirPath, boolean unattended, ProgressInterface progress, String urlText)
+	private static void downloadAndInstallApp(String installDirPath, boolean unattended, ProgressInterface progress, String urlText)
 			throws IOException, FileNotFoundException, InterruptedException {
 		var url = new URL(urlText);
 		var installDir = installDirPath == null ? null : new File(installDirPath);
@@ -59,28 +63,33 @@ public final class CallInstall implements RemoteCallable {
 		/* Download the installer file */
 		var inConx = url.openConnection();
 		var sz = inConx.getContentLength();
-		if(outFile.exists() && outFile.length() == sz) {
-			return;
-		}
-		try (var out = new FileOutputStream(outFile)) {
-			try(var inStream = inConx.getInputStream()) {
-				var buf = new byte[65536];
-				if(progress != null)
-					progress.setStatusMessage("Downloading " + filename);
-				try (var in = inStream) {
-					int r;
-					int t = 0;
-					while ((r = in.read(buf)) != -1) {
-						out.write(buf, 0, r);
-						t += r;
-						if(progress != null)
-							progress.setPercentCompleted((int) (((double) t / (double) sz) * 100.0));
+		if(!outFile.exists() || outFile.length() == sz) {
+			try (var out = new FileOutputStream(outFile)) {
+				try(var inStream = inConx.getInputStream()) {
+					var buf = new byte[65536];
+					if(progress != null)
+						progress.setStatusMessage("Downloading " + filename);
+					try (var in = inStream) {
+						int r;
+						int t = 0;
+						while ((r = in.read(buf)) != -1) {
+							out.write(buf, 0, r);
+							t += r;
+							if(progress != null)
+								progress.setPercentCompleted((int) (((double) t / (double) sz) * 100.0));
+						}
+						in.transferTo(out);
 					}
-					in.transferTo(out);
 				}
 			}
 		}
 
+		runInstaller(installDirPath, unattended, progress, outFile);
+	}
+
+	private static void runInstaller(String installDirPath, boolean unattended, ProgressInterface progress, File outFile)
+			throws IOException, InterruptedException {
+		var installDir = installDirPath == null ? null : new File(installDirPath);
 		outFile.setExecutable(true, false);
 
 		if (Util.isMacOS()) {
