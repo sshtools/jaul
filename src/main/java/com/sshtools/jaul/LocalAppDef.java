@@ -7,6 +7,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Optional;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -90,6 +91,20 @@ public class LocalAppDef implements AppDef {
 	public <A extends AppDef> A forBranch(Optional<String> branch) {
 		if(branch.isEmpty()) {
 			return (A)this;
+		}
+		else if(branch.get().equals("main")) {
+			var splt = rawDescriptorURL.split("/");
+			var prts = new ArrayList<String>();
+			for(var i = 0 ; i < splt.length; i++) {
+				if(splt[i].equals("branch")) {
+					i++;
+				}
+				else {
+					prts.add(splt[i]);
+				}
+			}
+			return (A)new LocalAppDef(app, name, version, publisher, url, icon, uninstall, updater, 
+					String.join("/", prts));
 		}
 		else {
 			return (A)new LocalAppDef(app, name, version, publisher, url, icon, uninstall, updater, 
