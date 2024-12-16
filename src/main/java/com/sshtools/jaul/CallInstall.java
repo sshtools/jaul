@@ -23,33 +23,35 @@ public final class CallInstall implements RemoteCallable {
 	private String installPath;
 	private boolean unattended;
 	private File installerFile;
+	private boolean gui;
 	
 	public CallInstall() {
 		prg = null;
 	}
 
-	public CallInstall(ProgressInterface prg, String urlText, String installPath, boolean unattended, File installerFile) {
+	public CallInstall(ProgressInterface prg, String urlText, String installPath, boolean unattended, File installerFile, boolean gui) {
 		this.prg = prg;
 		this.urlText = urlText;
 		this.installPath = installPath;
 		this.unattended = unattended;
 		this.installerFile = installerFile;
+		this.gui = gui;
 	}
 
 	@Override
 	public Serializable execute() {
 		try {
 			if(installerFile == null)
-				downloadAndInstallApp( installPath, unattended, prg, urlText);
+				downloadAndInstallApp( installPath, unattended, prg, urlText, gui);
 			else
-				runInstaller(installPath, unattended, prg, installerFile);
+				runInstaller(installPath, unattended, prg, installerFile, gui);
 		} catch (IOException | InterruptedException e) {
 			throw new IllegalStateException("Failed elevated action.", e);
 		}
 		return "";
 	}
 
-	private static void downloadAndInstallApp(String installDirPath, boolean unattended, ProgressInterface progress, String urlText)
+	private static void downloadAndInstallApp(String installDirPath, boolean unattended, ProgressInterface progress, String urlText, boolean gui)
 			throws IOException, FileNotFoundException, InterruptedException {
 		var url = new URL(urlText);
 		var installDir = installDirPath == null ? null : new File(installDirPath);
@@ -84,10 +86,10 @@ public final class CallInstall implements RemoteCallable {
 			}
 		}
 
-		runInstaller(installDirPath, unattended, progress, outFile);
+		runInstaller(installDirPath, unattended, progress, outFile, gui);
 	}
 
-	private static void runInstaller(String installDirPath, boolean unattended, ProgressInterface progress, File outFile)
+	private static void runInstaller(String installDirPath, boolean unattended, ProgressInterface progress, File outFile, boolean gui)
 			throws IOException, InterruptedException {
 		var installDir = installDirPath == null ? null : new File(installDirPath);
 		outFile.setExecutable(true, false);
@@ -116,7 +118,7 @@ public final class CallInstall implements RemoteCallable {
 					throw new IOException("No installer found in volume " + volPath);
 
 				var inst = new File(new File(new File(dir[0], "Contents"), "MacOS"), "JavaApplicationStub");
-				runInstallerExecutable(inst, installDir, unattended, progress);
+				runInstallerExecutable(inst, installDir, unattended, progress, gui);
 			} finally {
 				if(progress != null) {
 					progress.setStatusMessage("Unmounting archive");
@@ -129,11 +131,11 @@ public final class CallInstall implements RemoteCallable {
 			if(progress != null) {
 				progress.setStatusMessage("Executing installer");
 			}
-			runInstallerExecutable(outFile, installDir, unattended, progress);
+			runInstallerExecutable(outFile, installDir, unattended, progress, gui);
 		}
 	}
 
-	private static void runInstallerExecutable(File exec, File installDir, boolean unattended, ProgressInterface progress)
+	private static void runInstallerExecutable(File exec, File installDir, boolean unattended, ProgressInterface progress, boolean gui)
 			throws IOException, InterruptedException {
 		var args = new ArrayList<String>();
 		args.add(exec.toString());
@@ -148,7 +150,7 @@ public final class CallInstall implements RemoteCallable {
 			/* Having an install dir means this is actually an upgrade */
 			args.add("-dir");
 			args.add(installDir.getAbsolutePath().toString());
-			if (unattended) {
+			if (unattended && !gui) {
 				args.add("-alerts");
 				args.add("-splash");
 				args.add("Installing");
