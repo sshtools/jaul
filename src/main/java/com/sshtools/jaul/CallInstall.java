@@ -150,7 +150,7 @@ public final class CallInstall implements RemoteCallable {
 			/* Having an install dir means this is actually an upgrade */
 			args.add("-dir");
 			args.add(installDir.getAbsolutePath().toString());
-			if (unattended && !gui) {
+			if (unattended && gui) {
 				args.add("-alerts");
 				args.add("-splash");
 				args.add("Installing");
