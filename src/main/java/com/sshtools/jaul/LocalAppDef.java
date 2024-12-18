@@ -89,27 +89,28 @@ public class LocalAppDef implements AppDef {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <A extends AppDef> A forBranch(Optional<String> branch) {
-		if(branch.isEmpty()) {
-			return (A)this;
-		}
-		else if(branch.get().equals("main")) {
+		if (branch.isEmpty()) {
+			return (A) this;
+		} else {
+
 			var splt = rawDescriptorURL.split("/");
 			var prts = new ArrayList<String>();
-			for(var i = 0 ; i < splt.length; i++) {
-				if(splt[i].equals("branch")) {
+			for (var i = 0; i < splt.length; i++) {
+				if (splt[i].equals("branch")) {
 					i++;
-				}
-				else {
+				} else {
 					prts.add(splt[i]);
 				}
 			}
-			return (A)new LocalAppDef(app, name, version, publisher, url, icon, uninstall, updater, 
-					String.join("/", prts));
-		}
-		else {
-			return (A)new LocalAppDef(app, name, version, publisher, url, icon, uninstall, updater, 
-					rawDescriptorURL.replace("${phase}", branch.get() + "/${phase}")
-			);
+			var urlstr = String.join("/", prts);
+			
+			if (branch.get().equals("main")) {
+				return (A) new LocalAppDef(app, name, version, publisher, url, icon, uninstall, updater,
+						urlstr);
+			} else {
+				return (A) new LocalAppDef(app, name, version, publisher, url, icon, uninstall, updater,
+						urlstr.replace("${phase}", branch.get() + "/${phase}"));
+			}
 		}
 	}
 	
