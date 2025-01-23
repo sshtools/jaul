@@ -16,7 +16,7 @@ public interface JaulAppProvider {
 
 	
 	static JaulAppProvider fromStatic(String id, AppCategory category, String updatesUrl, String updaterId) {
-		return fromStatic(id, category, updatesUrl, updaterId);
+		return fromStatic(id, category, updatesUrl, updaterId, new String[0]);
 	}
 	
 	static JaulAppProvider fromStatic(String id, AppCategory category, String updatesUrl, String updaterId, String... branches) {
