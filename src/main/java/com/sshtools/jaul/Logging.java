@@ -1,5 +1,7 @@
 package com.sshtools.jaul;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.MessageFormat;
 import java.util.Optional;
 
@@ -11,6 +13,13 @@ public class Logging {
 		void debug(String msg);
 
 		void warning(String msg);
+
+		default void error(String msg, Throwable exception) {
+			error(msg);
+			var sw = new StringWriter();
+			exception.printStackTrace(new PrintWriter(sw, true));
+			error(sw.toString());
+		}
 
 		void error(String msg);
 
@@ -65,6 +74,10 @@ public class Logging {
 	
 	public static void warn(String pattern, Object... args) {
 		log().warning(args.length == 0 ? pattern : MessageFormat.format(pattern, args));
+	}
+	
+	public static void error(String pattern,  Throwable exception, Object... args) {
+		log().error(args.length == 0 ? pattern : MessageFormat.format(pattern, args), exception);
 	}
 	
 	public static void error(String pattern, Object... args) {
