@@ -59,8 +59,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 	@Override
 	public final void deferUpdate() {
 		setAvailableVersion(null);
-		configDeferUpdate();
-		context.setUpdatesDeferredUntil(deferUntil);
+		scheduleNextCheck();
 	}
 
 	@Override
@@ -155,7 +154,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 	protected final void rescheduleCheck(long nonDeferredDelay) {
 		cancelTask();
 		long defer = getDeferUntil();
-		long when = defer == 0 ? 0 : defer - System.currentTimeMillis();
+		long when = defer == 0 ? 0 :  Math.max(1, System.currentTimeMillis());
 		if (when > 0) {
 			Logging.info(String.format("Scheduling next check for %s",
 					DateFormat.getDateTimeInstance().format(new Date(defer))));
@@ -188,7 +187,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 		} catch (Exception e) {
 			Logging.error("Failed to automatically check for updates.", e);
 		} finally {
-			rescheduleCheck(0);
+			scheduleNextCheck();
 		}
 	}
 
@@ -215,7 +214,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 				} finally {
 					setUpdating(false, check);
 					if (check) {
-						rescheduleCheck(0);
+						scheduleNextCheck();
 					}
 				}
 			} else {
@@ -223,6 +222,11 @@ public abstract class AbstractUpdateService implements UpdateService {
 						DateFormat.getDateTimeInstance().format(new Date(defer))));
 			}
 		}
+	}
+
+	private void scheduleNextCheck() {
+		configDeferUpdate();
+		context.setUpdatesDeferredUntil(deferUntil);
 	}
 
 }

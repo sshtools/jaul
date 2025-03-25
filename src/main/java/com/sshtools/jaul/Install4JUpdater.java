@@ -279,7 +279,7 @@ public class Install4JUpdater implements Callable<String> {
 					Logging.info("Cancelled.");
 					throw new InterruptedIOException("Cancelled.");
 				} catch (Exception e) {
-					Logging.error("Failed.", e);
+					throw e;
 				}
 				return null;
 			}, bestRuntimePath(path.orElse(Paths.get(System.getProperty("user.dir")))));
