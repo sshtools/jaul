@@ -2,6 +2,7 @@ package com.sshtools.jaul;
 
 import java.io.IOException;
 import java.text.DateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -125,10 +126,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 	}
 
 	protected final void configDeferUpdate() {
-		long day = TimeUnit.DAYS.toMillis(1);
-		long nowDay = (System.currentTimeMillis() / day) * day;
-		long when = nowDay + day + TimeUnit.HOURS.toMillis(12)
-				+ (long) (Math.random() * 3.0d * (double) TimeUnit.HOURS.toMillis(3));
+		long when = calcWhenNextUpdateCheck();
 		setDeferUntil(when);
 		try {
 			rescheduleCheck(-1);
@@ -136,6 +134,19 @@ public abstract class AbstractUpdateService implements UpdateService {
 		}
 		catch(UnsupportedOperationException uoe) {
 			Logging.info("No scheduler, update check will not occur this runtime.");
+		}
+	}
+
+	protected long calcWhenNextUpdateCheck() {
+		if(Boolean.getBoolean("jaul.dev")) {
+			return System.currentTimeMillis() + Duration.ofMinutes(Integer.parseInt(System.getProperty("jaul.nextCheckMins", "5"))).toMillis();
+		}
+		else {
+			long day = TimeUnit.DAYS.toMillis(1);
+			long nowDay = (System.currentTimeMillis() / day) * day;
+			long when = nowDay + day + TimeUnit.HOURS.toMillis(12)
+					+ (long) (Math.random() * 3.0d * (double) TimeUnit.HOURS.toMillis(3));
+			return when;
 		}
 	}
 
@@ -154,10 +165,10 @@ public abstract class AbstractUpdateService implements UpdateService {
 	protected final void rescheduleCheck(long nonDeferredDelay) {
 		cancelTask();
 		long defer = getDeferUntil();
-		long when = defer == 0 ? 0 :  Math.max(1, System.currentTimeMillis());
+		long when = defer == 0 ? 0 :  Math.max(1, defer - System.currentTimeMillis());
 		if (when > 0) {
-			Logging.info(String.format("Scheduling next check for %s",
-					DateFormat.getDateTimeInstance().format(new Date(defer))));
+			Logging.info("Scheduling next check for {0} (in {1})",
+					DateFormat.getDateTimeInstance().format(new Date(defer)), when);
 			checkTask = context.getScheduler().schedule(() -> timedCheck(), when, TimeUnit.MILLISECONDS);
 		} else {
 			if(nonDeferredDelay > 0) 
@@ -183,7 +194,7 @@ public abstract class AbstractUpdateService implements UpdateService {
 
 	protected final void timedCheck() {
 		try {
-			update(true);
+			update(context.isAutomaticUpdates() ? false : true);
 		} catch (Exception e) {
 			Logging.error("Failed to automatically check for updates.", e);
 		} finally {
@@ -218,8 +229,8 @@ public abstract class AbstractUpdateService implements UpdateService {
 					}
 				}
 			} else {
-				Logging.info(String.format("Updates deferred until %s",
-						DateFormat.getDateTimeInstance().format(new Date(defer))));
+				Logging.info("Updates deferred until {0}",
+						DateFormat.getDateTimeInstance().format(new Date(defer)));
 			}
 		}
 	}
