@@ -236,8 +236,6 @@ public class AppRegistry {
 					} catch (Exception e) {
 						if (Logging.isDebugEnabled())
 							Logging.error(MessageFormat.format("Failed to add app {0}.", k), e);
-						else
-							Logging.error(MessageFormat.format("Failed to add app {0}. {1}", k, e.getMessage()));
 					}
 				}
 			} catch (BackingStoreException e) {
@@ -262,8 +260,6 @@ public class AppRegistry {
 							l.add(checkApp(new App(Scope.SYSTEM, node), node));
 					} catch (Exception e) {
 						if (Logging.isDebugEnabled())
-							Logging.error(MessageFormat.format("Failed to add app {0}.", k), e);
-						else
 							Logging.error(MessageFormat.format("Failed to add app {0}. {1}", k, e.getMessage()));
 					}
 				}
