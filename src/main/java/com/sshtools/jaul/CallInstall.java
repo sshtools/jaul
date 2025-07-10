@@ -92,23 +92,22 @@ public final class CallInstall implements RemoteCallable {
 		/* Download the installer file */
 		var inConx = url.openConnection();
 		var sz = inConx.getContentLength();
-		if(!outFile.exists() || outFile.length() == sz) {
+		if(!outFile.exists() || outFile.length() != sz) {
 			debug("Output does not exist or differs in size, so downloading.");
+			var buf = new byte[65536];
 			try (var out = new FileOutputStream(outFile)) {
 				try(var inStream = inConx.getInputStream()) {
-					var buf = new byte[65536];
 					if(progress != null)
 						progress.setStatusMessage("Downloading " + filename);
-					try (var in = inStream) {
-						int r;
-						int t = 0;
-						while ((r = in.read(buf)) != -1) {
-							out.write(buf, 0, r);
-							t += r;
-							if(progress != null)
-								progress.setPercentCompleted((int) (((double) t / (double) sz) * 100.0));
-						}
-						in.transferTo(out);
+					int r;
+					int t = 0;
+					while ((r = inStream.read(buf)) != -1) {
+						debug("Read " + r + " bytes");
+						out.write(buf, 0, r);
+						debug("Written " + r + " bytes");
+						t += r;
+						if(progress != null)
+							progress.setPercentCompleted((int) (((double) t / (double) sz) * 100.0));
 					}
 				}
 			}
