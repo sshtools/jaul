@@ -22,6 +22,7 @@ public class InstallJaulAppAction extends AbstractInstallAction implements JaulI
 	private File installDir;
 	private boolean unattended = true;
 	private boolean forceReinstall = false;
+	private boolean debug = true;
 
 	@Override
 	public boolean install(InstallerContext context) throws UserCanceledException {
@@ -84,10 +85,10 @@ public class InstallJaulAppAction extends AbstractInstallAction implements JaulI
 	protected void doInstall(InstallerContext context, Media media) {
 		var url = media.url();
 		if(Util.hasFullAdminRights() || Util.isAdminGroup()) {
-			new CallInstall(context.getProgressInterface(), url.toExternalForm(), installDir == null ? null : installDir.getAbsolutePath().toString(), unattended, null, true).execute();
+			new CallInstall(context.getProgressInterface(), url.toExternalForm(), installDir == null ? null : installDir.getAbsolutePath().toString(), unattended, null, true, debug).execute();
 		}
 		else {
-			context.runElevated(new CallInstall(null, url.toExternalForm(), installDir == null ? null : installDir.getAbsolutePath().toString(), unattended, null, true), true);
+			context.runElevated(new CallInstall(null, url.toExternalForm(), installDir == null ? null : installDir.getAbsolutePath().toString(), unattended, null, true, debug), true);
 		}
 	}
 
@@ -121,6 +122,14 @@ public class InstallJaulAppAction extends AbstractInstallAction implements JaulI
 
 	public void setUnattended(boolean unattended) {
 		this.unattended = unattended;
+	}
+
+	public boolean isDebug() {
+		return replaceWithTextOverride("debug", this.unattended);
+	}
+
+	public void setDebug(boolean debug) {
+		this.debug = debug;
 	}
 
 	public String getUpdatesXmlLocation() {

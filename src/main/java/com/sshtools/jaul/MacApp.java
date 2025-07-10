@@ -113,7 +113,7 @@ public class MacApp {
 		else {
 			System.out.println("Copying " + app + " to " + script);
 			/* TODO test if a symlink works to save some disk space and confusion */
-			Files.copy(app, script);
+			Files.copy(appdir.resolve(app), script);
 		}
 		
 		script.toFile().setExecutable(true, false);

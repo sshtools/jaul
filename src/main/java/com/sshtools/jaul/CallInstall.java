@@ -15,22 +15,26 @@ import java.util.List;
 import com.install4j.api.Util;
 import com.install4j.api.context.ProgressInterface;
 import com.install4j.api.context.RemoteCallable;
+import com.install4j.runtime.installer.helper.Logger;
 
 @SuppressWarnings("serial")
 public final class CallInstall implements RemoteCallable {
+	
 	private final ProgressInterface prg;
 	private String urlText;
 	private String installPath;
 	private boolean unattended;
 	private File installerFile;
 	private boolean gui;
+	private boolean debug;
 	
 	public CallInstall() {
 		prg = null;
 	}
 
-	public CallInstall(ProgressInterface prg, String urlText, String installPath, boolean unattended, File installerFile, boolean gui) {
+	public CallInstall(ProgressInterface prg, String urlText, String installPath, boolean unattended, File installerFile, boolean gui, boolean debug) {
 		this.prg = prg;
+		this.debug = debug;
 		this.urlText = urlText;
 		this.installPath = installPath;
 		this.unattended = unattended;
@@ -50,10 +54,19 @@ public final class CallInstall implements RemoteCallable {
 		}
 		return "";
 	}
-
-	private static void downloadAndInstallApp(String installDirPath, boolean unattended, ProgressInterface progress, String urlText, boolean gui)
+	
+	private void debug(String text) {
+		if(debug) {
+			Logger.getInstance().info(this, text);
+		}
+	}
+	
+	private void downloadAndInstallApp(String installDirPath, boolean unattended, ProgressInterface progress, String urlText, boolean gui)
 			throws IOException, FileNotFoundException, InterruptedException {
 		var url = new URL(urlText);
+		
+		debug("Download from " + url);
+		
 		var installDir = installDirPath == null ? null : new File(installDirPath);
 		var filename = url.getPath();
 		var idx = filename.lastIndexOf('/');
@@ -61,11 +74,13 @@ public final class CallInstall implements RemoteCallable {
 			filename = filename.substring(idx + 1);
 		}
 		var outFile = new File(installDir == null ? new File(System.getProperty("user.dir")) : installDir, filename);
+		debug("Will save to " + outFile);
 
 		/* Download the installer file */
 		var inConx = url.openConnection();
 		var sz = inConx.getContentLength();
 		if(!outFile.exists() || outFile.length() == sz) {
+			debug("Output does not exist or differs in size, so downloading.");
 			try (var out = new FileOutputStream(outFile)) {
 				try(var inStream = inConx.getInputStream()) {
 					var buf = new byte[65536];
@@ -84,22 +99,29 @@ public final class CallInstall implements RemoteCallable {
 					}
 				}
 			}
+			debug("Downloaded.");
 		}
 
 		runInstaller(installDirPath, unattended, progress, outFile, gui);
 	}
 
-	private static void runInstaller(String installDirPath, boolean unattended, ProgressInterface progress, File outFile, boolean gui)
+	private void runInstaller(String installDirPath, boolean unattended, ProgressInterface progress, File outFile, boolean gui)
 			throws IOException, InterruptedException {
+		
 		var installDir = installDirPath == null ? null : new File(installDirPath);
 		outFile.setExecutable(true, false);
 
+		debug("Running installer at " + outFile);
+
 		if (Util.isMacOS()) {
+			debug("Detected Mac OS, jumping through hoops");
+			
 			/* Mac is special */
 			var volId = "v" + System.currentTimeMillis();
 			var volPath = "/Volumes/" + volId;
 			var exec = outFile.toString();
 			try {
+				debug("Mounting archive");
 				if(progress != null) {
 					progress.setStatusMessage("Mounting archive");
 				}
@@ -109,7 +131,8 @@ public final class CallInstall implements RemoteCallable {
 				if (p.waitFor() != 0) {
 					throw new IOException("Installer exited with error code " + p.exitValue());
 				}
-
+				
+				debug("Mounted archive, calling installer");
 				if(progress != null) {
 					progress.setStatusMessage("Executing installer");
 				}
@@ -120,12 +143,15 @@ public final class CallInstall implements RemoteCallable {
 				var inst = new File(new File(new File(dir[0], "Contents"), "MacOS"), "JavaApplicationStub");
 				runInstallerExecutable(inst, installDir, unattended, progress, gui);
 			} finally {
+				debug("Ejecting installer");
 				if(progress != null) {
 					progress.setStatusMessage("Unmounting archive");
 				}
 				sleep(1000);
 				new ProcessBuilder("hdiutil", "eject", volPath).redirectError(Redirect.INHERIT)
 						.redirectInput(Redirect.INHERIT).redirectOutput(Redirect.INHERIT).start().waitFor();
+
+				debug("Ejected installer");
 			}
 		} else {
 			if(progress != null) {
@@ -135,8 +161,11 @@ public final class CallInstall implements RemoteCallable {
 		}
 	}
 
-	private static void runInstallerExecutable(File exec, File installDir, boolean unattended, ProgressInterface progress, boolean gui)
+	private void runInstallerExecutable(File exec, File installDir, boolean unattended, ProgressInterface progress, boolean gui)
 			throws IOException, InterruptedException {
+
+		debug("Running installer " + exec);
+		
 		var args = new ArrayList<String>();
 		args.add(exec.toString());
 		if (unattended) {
