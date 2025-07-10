@@ -111,9 +111,10 @@ public class MacApp {
 			}
 		}
 		else {
-			System.out.println("Copying " + app + " to " + script);
+			var file = dir.resolve(app);
+			System.out.println("Copying " + file + " to " + script);
 			/* TODO test if a symlink works to save some disk space and confusion */
-			Files.copy(appdir.resolve(app), script);
+			Files.copy(file, script);
 		}
 		
 		script.toFile().setExecutable(true, false);

@@ -66,6 +66,7 @@ public final class CallInstall implements RemoteCallable {
 		var url = new URL(urlText);
 		
 		debug("Download from " + url);
+		debug("Install dir path is " + (installDirPath == null ? "<unset>" : installDirPath));
 		
 		var installDir = installDirPath == null ? null : new File(installDirPath);
 		var filename = url.getPath();
@@ -73,7 +74,16 @@ public final class CallInstall implements RemoteCallable {
 		if (idx != -1) {
 			filename = filename.substring(idx + 1);
 		}
-		var outFile = new File(installDir == null ? new File(System.getProperty("user.dir")) : installDir, filename);
+		
+		var outDir = installDir == null ? new File(System.getProperty("user.dir")) : installDir;
+		File outFile;
+		if(outDir.canWrite()) {
+			outFile = new File(outDir, filename);
+		}
+		else {
+			outFile = File.createTempFile("jaul", filename);
+			debug("Cannot write to " + outDir + ", so using tmpfile at " + outFile);
+		}
 		debug("Will save to " + outFile);
 
 		/* Download the installer file */
