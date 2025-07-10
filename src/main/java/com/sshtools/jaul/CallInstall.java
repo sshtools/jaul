@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.ProcessBuilder.Redirect;
 import java.net.URL;
@@ -140,6 +141,12 @@ public final class CallInstall implements RemoteCallable {
 				}
 				var cmds = Arrays.asList("/usr/bin/hdiutil", "mount", "-mountpoint", volPath, exec);
 				debug("Command: " + String.join(" ", cmds));
+
+				if(new File("/tmp/debug-installer").exists()) {
+					try(var out = new PrintWriter(new FileOutputStream(new File("/tmp/run-installer.sh")), true)) {
+						out.println(String.join(" ", cmds));
+					}
+				}
 				
 				var p = new ProcessBuilder(cmds)
 						.redirectError(Redirect.INHERIT).redirectInput(Redirect.INHERIT)
