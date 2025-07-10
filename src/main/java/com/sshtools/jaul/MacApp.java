@@ -18,6 +18,7 @@ public class MacApp {
 	private final Optional<String> name;
 	private final boolean hideDock;
 	private final List<String> arguments;
+	private boolean frontEndScript;
 
 	public final static class Builder {
 		
@@ -25,6 +26,7 @@ public class MacApp {
 		private Optional<String> name = Optional.empty();
 		private boolean hideDock;
 		private final List<String> arguments  = new ArrayList<String>();
+		private boolean frontEndScript;
 		
 		public Builder(Path app) {
 			this.app = app;
@@ -40,9 +42,21 @@ public class MacApp {
 			return this;
 		}
 		
-		
 		public Builder withHideDock() {
-			this.hideDock = true;
+			return withHideDock(true);
+		}
+		
+		public Builder withHideDock(boolean hideDock) {
+			this.hideDock = hideDock;
+			return this;
+		}
+		
+		public Builder withFrontEndScript() {
+			return withFrontEndScript(true);
+		}
+		
+		public Builder withFrontEndScript(boolean frontEndScript) {
+			this.frontEndScript = frontEndScript;
 			return this;
 		}
 		
@@ -61,6 +75,7 @@ public class MacApp {
 		this.app = builder.app;
 		this.name = builder.name;
 		this.hideDock = builder.hideDock;
+		this.frontEndScript = builder.frontEndScript;
 		this.arguments = Collections.unmodifiableList(new ArrayList<String>(builder.arguments));
 	}
 
@@ -71,32 +86,38 @@ public class MacApp {
 		var contents = appdir.resolve("Contents");
 		var macos = contents.resolve("MacOS");
 		
-		var script = macos.resolve(appname);
 		
 		Files.createDirectories(macos);
+		var script = macos.resolve(appname);
 		
-		try(var wtr = new PrintWriter(Files.newBufferedWriter(script), true)) {
-			wtr.println("#!/bin/sh");
-			wtr.println("#######################################################################");
-			wtr.println("cd '" + dir.toAbsolutePath().toString() + "'");
-			if(app.isAbsolute()) {
-				if(arguments.isEmpty())
-					wtr.println(app.toString());
-				else
-					wtr.println(app.toString() + " " + String.join(" ", arguments.stream().map(this::formatArg).collect(Collectors.toList())));
+		if(frontEndScript) {
+			try(var wtr = new PrintWriter(Files.newBufferedWriter(script), true)) {
+				wtr.println("#!/bin/sh");
+				wtr.println("#######################################################################");
+				wtr.println("cd '" + dir.toAbsolutePath().toString() + "'");
+				if(app.isAbsolute()) {
+					if(arguments.isEmpty())
+						wtr.println(app.toString());
+					else
+						wtr.println(app.toString() + " " + String.join(" ", arguments.stream().map(this::formatArg).collect(Collectors.toList())));
+				}
+				else {
+					if(arguments.isEmpty())
+						wtr.println("./" + app.toString());
+					else
+						wtr.println("./" + app.toString() + " " + String.join(" ", arguments.stream().map(this::formatArg).collect(Collectors.toList())));
+				}
+				wtr.println();
 			}
-			else {
-				if(arguments.isEmpty())
-					wtr.println("./" + app.toString());
-				else
-					wtr.println("./" + app.toString() + " " + String.join(" ", arguments.stream().map(this::formatArg).collect(Collectors.toList())));
-			}
-			wtr.println();
+		}
+		else {
+			System.out.println("Copying " + app + " to " + script);
+			/* TODO test if a symlink works to save some disk space and confusion */
+			Files.copy(app, script);
 		}
 		
 		script.toFile().setExecutable(true, false);
 		
-
 		var plist = contents.resolve("Info.plist");
 		try(var wtr = new PrintWriter(Files.newBufferedWriter(plist), true)) {
 			wtr.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -106,6 +127,10 @@ public class MacApp {
 
 			wtr.println("<key>CFBundleDisplayName</key>");
 			wtr.println("<value>" + appname + "</value>");
+
+			wtr.println("<key>CFBundleExecutable</key>");
+			wtr.println("<value>" + script.getFileName().toString() + "</value>");
+			
 			if(hideDock) {
 				wtr.println("<key>LSUIElement</key>");
 				wtr.println("<true/>");
