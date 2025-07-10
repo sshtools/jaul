@@ -131,14 +131,15 @@ public final class CallInstall implements RemoteCallable {
 			var volPath = "/Volumes/" + volId;
 			var exec = outFile.toString();
 			try {
-				debug("Mounting archive");
+				debug("Mounting archive " + volPath + " to " + exec);
 				if(progress != null) {
 					progress.setStatusMessage("Mounting archive");
 				}
-				var p = new ProcessBuilder("hdiutil", "mount", "-mountpoint", volPath, exec)
+				var p = new ProcessBuilder("/usr/bin/hdiutil", "mount", "-mountpoint", volPath, exec)
 						.redirectError(Redirect.INHERIT).redirectInput(Redirect.INHERIT)
 						.redirectOutput(Redirect.INHERIT).start();
 				if (p.waitFor() != 0) {
+					debug("Mount failed with " + p.exitValue());
 					throw new IOException("Installer exited with error code " + p.exitValue());
 				}
 				
