@@ -9,7 +9,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.ProcessBuilder.Redirect;
 import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.install4j.api.Util;
@@ -131,11 +133,15 @@ public final class CallInstall implements RemoteCallable {
 			var volPath = "/Volumes/" + volId;
 			var exec = outFile.toString();
 			try {
-				debug("Mounting archive " + volPath + " to " + exec);
+				
+				debug("Mounting volume " + volPath + " to archive " + exec);
 				if(progress != null) {
 					progress.setStatusMessage("Mounting archive");
 				}
-				var p = new ProcessBuilder("/usr/bin/hdiutil", "mount", "-mountpoint", volPath, exec)
+				var cmds = Arrays.asList("/usr/bin/hdiutil", "mount", "-mountpoint", volPath, exec);
+				debug("Command: " + String.join(" ", cmds));
+				
+				var p = new ProcessBuilder(cmds)
 						.redirectError(Redirect.INHERIT).redirectInput(Redirect.INHERIT)
 						.redirectOutput(Redirect.INHERIT).start();
 				if (p.waitFor() != 0) {
@@ -155,6 +161,10 @@ public final class CallInstall implements RemoteCallable {
 				runInstallerExecutable(inst, installDir, unattended, progress, gui);
 			} finally {
 				debug("Ejecting installer");
+				if(new File("/tmp/debug-installer").exists()) {
+					debug("Sleeping for 5 mins");
+					Thread.sleep(Duration.ofMinutes(5).toMillis());
+				}
 				if(progress != null) {
 					progress.setStatusMessage("Unmounting archive");
 				}
