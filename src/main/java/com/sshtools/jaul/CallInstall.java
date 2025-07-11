@@ -142,7 +142,7 @@ public final class CallInstall implements RemoteCallable {
 				debug("Command: " + String.join(" ", cmds));
 
 				if(new File("/tmp/debug-installer").exists()) {
-					try(var out = new PrintWriter(new FileOutputStream(new File("/tmp/run-installer.sh")), true)) {
+					try(var out = new PrintWriter(new FileOutputStream(new File("/tmp/mount-installer.sh")), true)) {
 						out.println(String.join(" ", cmds));
 					}
 				}
@@ -191,7 +191,7 @@ public final class CallInstall implements RemoteCallable {
 	private void runInstallerExecutable(File exec, File installDir, boolean unattended, ProgressInterface progress, boolean gui)
 			throws IOException, InterruptedException {
 
-		debug("Running installer " + exec);
+		debug("Running installer " + exec + " unattended: " + unattended);
 		
 		var args = new ArrayList<String>();
 		args.add(exec.toString());
@@ -215,9 +215,19 @@ public final class CallInstall implements RemoteCallable {
 		addStandardInstall4JArguments(args);
 		if(progress != null)
 			progress.setStatusMessage("Running companion installer");
+		
+		debug("Full command is : " + String.join(" ", args));
+
+		if(new File("/tmp/debug-installer").exists()) {
+			try(var out = new PrintWriter(new FileOutputStream(new File("/tmp/run-installer.sh")), true)) {
+				out.println(String.join(" ", args));
+			}
+		}
+		
 		var p = new ProcessBuilder(args).redirectError(Redirect.INHERIT).redirectInput(Redirect.INHERIT)
 				.redirectOutput(Redirect.INHERIT).start();
 		if (p.waitFor() != 0) {
+			debug("Installed Exited with non zero code " + p.exitValue());
 			throw new IOException("Installer exited with error code " + p.exitValue());
 		}
 	}
