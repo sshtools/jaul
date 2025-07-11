@@ -228,6 +228,7 @@ public final class CallInstall implements RemoteCallable {
 		
 		var p = new ProcessBuilder(args);
 		p.redirectErrorStream(true);
+		p.directory(exec.getParentFile());
 		var prc = p.start();
 		var out = new ByteArrayOutputStream();
 		try(InputStream in = prc.getInputStream()) {
