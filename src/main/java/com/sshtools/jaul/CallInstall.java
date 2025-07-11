@@ -2,10 +2,12 @@ package com.sshtools.jaul;
 
 import static java.lang.Thread.sleep;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.ProcessBuilder.Redirect;
@@ -224,11 +226,17 @@ public final class CallInstall implements RemoteCallable {
 			}
 		}
 		
-		var p = new ProcessBuilder(args).redirectError(Redirect.INHERIT).redirectInput(Redirect.INHERIT)
-				.redirectOutput(Redirect.INHERIT).start();
-		if (p.waitFor() != 0) {
-			debug("Installed Exited with non zero code " + p.exitValue());
-			throw new IOException("Installer exited with error code " + p.exitValue());
+		var p = new ProcessBuilder(args);
+		p.redirectErrorStream(true);
+		var prc = p.start();
+		var out = new ByteArrayOutputStream();
+		try(InputStream in = prc.getInputStream()) {
+				in.transferTo(out);
+		}
+		debug("Installer output: " + new String(out.toByteArray()));
+		if (prc.waitFor() != 0) {
+			debug("Installed Exited with non zero code " + prc.exitValue());
+			throw new IOException("Installer exited with error code " + prc.exitValue());
 		}
 	}
 

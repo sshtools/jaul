@@ -2,8 +2,10 @@ package com.sshtools.jaul;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -114,7 +116,7 @@ public class MacApp {
 			var file = dir.resolve(app);
 			System.out.println("Copying " + file + " to " + script);
 			/* TODO test if a symlink works to save some disk space and confusion */
-			Files.copy(file, script);
+			Files.copy(file, script, StandardCopyOption.REPLACE_EXISTING);
 		}
 		
 		script.toFile().setExecutable(true, false);
