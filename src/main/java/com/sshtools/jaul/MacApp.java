@@ -132,19 +132,19 @@ public class MacApp {
 			wtr.println("<dict>");
 
 			wtr.println("<key>CFBundleDisplayName</key>");
-			wtr.println("<value>" + appname + "</value>");
+			wtr.println("<string>" + appname + "</string>");
 
 			wtr.println("<key>CFBundleIdentifier</key>");
-			wtr.println("<value>" + id + "</value>");
+			wtr.println("<string>" + id + "</string>");
 
 			wtr.println("<key>CFBundleExecutable</key>");
-			wtr.println("<value>" + script.getFileName().toString() + "</value>");
+			wtr.println("<string>" + script.getFileName().toString() + "</string>");
 
 			wtr.println("<key>CFBundlePackageType</key>");
-			wtr.println("<value>APPL</value>");
+			wtr.println("<string>APPL</string>");
 
 			wtr.println("<key>NSPrincipalClass</key>");
-			wtr.println("<value>NSApplication</value>");
+			wtr.println("<string>NSApplication</string>");
 			
 			if(hideDock) {
 				wtr.println("<key>LSUIElement</key>");
