@@ -20,6 +20,7 @@ public class CreateMacAppAction extends AbstractInstallAction {
 	private String name;
 	private String id;
 	private String[] arguments;
+	private String[] environment;
 
 	@Override
 	public boolean install(InstallerContext context) throws UserCanceledException {
@@ -36,6 +37,13 @@ public class CreateMacAppAction extends AbstractInstallAction {
 		if(arguments != null)
 			bldr.withArguments(arguments);
 		
+		if(environment != null) {
+			for(var e : environment) {
+				var i = e.indexOf('=');
+				bldr.withEnviromentVariable(e.substring(0,i).trim(), e.substring(i + 1).trim());
+			}
+		}
+		
 		MacApp app = bldr.build();
 		try {
 			app.write(dir);
@@ -46,6 +54,14 @@ public class CreateMacAppAction extends AbstractInstallAction {
 		Logger.getInstance().info(this, MessageFormat.format("Created Mac App from target {0} with name {1} in {2}", target, name, dir));
 		
 		return true;
+	}
+
+	public String[] getEnvironment() {
+		return environment;
+	}
+
+	public void setEnvironment(String[] environment) {
+		this.environment = environment;
 	}
 
 	public String[] getArguments() {

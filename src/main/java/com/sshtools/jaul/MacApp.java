@@ -9,7 +9,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -21,6 +24,7 @@ public class MacApp {
 	private final List<String> arguments;
 	private final String id;
 	private boolean frontEndScript;
+	private final Map<String, String> environment;
 
 	public final static class Builder {
 		
@@ -30,10 +34,22 @@ public class MacApp {
 		private final List<String> arguments  = new ArrayList<String>();
 		private boolean frontEndScript;
 		private final String id;
+		private final Map<String, String> environment = new LinkedHashMap<>();
 		
 		public Builder(Path app, String id) {
 			this.app = app;
 			this.id = id;
+		}
+		
+		public Builder withEnviromentVariable(String key, String value) {
+			this.environment.put(key, value);
+			return this;
+		}
+		
+		public Builder withEnvironment(Map<String, String> environment) {
+			this.environment.clear();
+			this.environment.putAll(environment);
+			return this;
 		}
 
 		public Builder withArguments(String... arguments) {
@@ -82,6 +98,7 @@ public class MacApp {
 		this.hideDock = builder.hideDock;
 		this.frontEndScript = builder.frontEndScript;
 		this.arguments = Collections.unmodifiableList(new ArrayList<String>(builder.arguments));
+		this.environment = Collections.unmodifiableMap(new LinkedHashMap<>(builder.environment));
 	}
 
 	public void write(Path dir) throws IOException {
@@ -150,6 +167,17 @@ public class MacApp {
 				wtr.println("<key>LSUIElement</key>");
 				wtr.println("<true/>");
 			}
+
+			if(environment.size() > 0) {
+				wtr.println("<key>LSEnvironment</key>");
+				wtr.println("<dict>");
+				for(var en : environment.entrySet()) {
+					wtr.println("<key>" + en.getKey() + "</key>");
+					wtr.println("<string>" + en.getValue() + "</string>");
+				}
+				wtr.println("</dict>");
+			}
+			
 			wtr.println("</dict>");
 			wtr.println("</plist>");
 		}
