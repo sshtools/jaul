@@ -2,7 +2,6 @@ package com.sshtools.jaul;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -20,6 +19,7 @@ public class MacApp {
 	private final Optional<String> name;
 	private final boolean hideDock;
 	private final List<String> arguments;
+	private final String id;
 	private boolean frontEndScript;
 
 	public final static class Builder {
@@ -29,9 +29,11 @@ public class MacApp {
 		private boolean hideDock;
 		private final List<String> arguments  = new ArrayList<String>();
 		private boolean frontEndScript;
+		private final String id;
 		
-		public Builder(Path app) {
+		public Builder(Path app, String id) {
 			this.app = app;
+			this.id = id;
 		}
 
 		public Builder withArguments(String... arguments) {
@@ -74,6 +76,7 @@ public class MacApp {
 	}
 
 	private MacApp(Builder builder) {
+		this.id = builder.id;
 		this.app = builder.app;
 		this.name = builder.name;
 		this.hideDock = builder.hideDock;
@@ -131,8 +134,17 @@ public class MacApp {
 			wtr.println("<key>CFBundleDisplayName</key>");
 			wtr.println("<value>" + appname + "</value>");
 
+			wtr.println("<key>CFBundleIdentifier</key>");
+			wtr.println("<value>" + id + "</value>");
+
 			wtr.println("<key>CFBundleExecutable</key>");
 			wtr.println("<value>" + script.getFileName().toString() + "</value>");
+
+			wtr.println("<key>CFBundlePackageType</key>");
+			wtr.println("<value>APPL</value>");
+
+			wtr.println("<key>NSPrincipalClass</key>");
+			wtr.println("<value>NSApplication</value>");
 			
 			if(hideDock) {
 				wtr.println("<key>LSUIElement</key>");

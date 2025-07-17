@@ -18,6 +18,7 @@ public class CreateMacAppAction extends AbstractInstallAction {
 	private File target;
 	private boolean hideDock;
 	private String name;
+	private String id;
 	private String[] arguments;
 
 	@Override
@@ -27,7 +28,7 @@ public class CreateMacAppAction extends AbstractInstallAction {
 		
 		Logger.getInstance().info(this, MessageFormat.format("Creating Mac App from target {0} with name {1} in {2}", target, name, dir));
 		
-		MacApp.Builder bldr = new MacApp.Builder(target.toPath());
+		MacApp.Builder bldr = new MacApp.Builder(target.toPath(), id == null ? name : id);
 		if(name != null && name.length() > 0)
 			bldr.withName(name);
 		if(hideDock)
@@ -77,5 +78,13 @@ public class CreateMacAppAction extends AbstractInstallAction {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
 	}
 }
