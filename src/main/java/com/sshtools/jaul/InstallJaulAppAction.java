@@ -10,6 +10,7 @@ import com.install4j.api.Util;
 import com.install4j.api.actions.AbstractInstallAction;
 import com.install4j.api.context.InstallerContext;
 import com.install4j.api.context.UserCanceledException;
+import com.install4j.api.update.UpdateChecker;
 import com.install4j.runtime.installer.helper.Logger;
 import com.sshtools.jaul.UpdateDescriptor.Media;
 import com.sshtools.jaul.UpdateDescriptor.MediaKey;
@@ -22,6 +23,7 @@ public class InstallJaulAppAction extends AbstractInstallAction implements JaulI
 	private File installDir;
 	private boolean unattended = true;
 	private boolean forceReinstall = false;
+    private boolean updateIfNewerAvailable = true;
 	private boolean debug = true;
 
 	@Override
@@ -62,8 +64,8 @@ public class InstallJaulAppAction extends AbstractInstallAction implements JaulI
 						Logger.getInstance().info(this, MessageFormat.format("{0} is being installed because forceReinstall was set.", actualJaulAppId));
 						doInstall(context, media);
 					}
-					else if(!installedVersion.get().equals(media.version())) {
-						Logger.getInstance().info(this, MessageFormat.format("{0} is being installed because version {1} differs from version {2}.", actualJaulAppId, installedVersion.get(), media.version()));
+                    else if(updateIfNewerAvailable && UpdateChecker.isVersionGreaterThan(media.version(), installedVersion.get())) {
+						Logger.getInstance().info(this, MessageFormat.format("{0} is being installed because version {1} is lower than available version {2}.", actualJaulAppId, installedVersion.get(), media.version()));
 						doInstall(context, media);
 					}
 					else {
@@ -92,15 +94,23 @@ public class InstallJaulAppAction extends AbstractInstallAction implements JaulI
 		}
 	}
 
-	public boolean isForceReinstall() {
-		return replaceWithTextOverride("forceReinstall", this.forceReinstall);
+	public boolean isUpdateIfNewerAvailable() {
+		return replaceWithTextOverride("updateIfNewerAvailable", this.updateIfNewerAvailable);
 	}
+
+    public boolean isForceReinstall() {
+        return replaceWithTextOverride("forceReinstall", this.forceReinstall);
+    }
 
 	public void setForceReinstall(boolean forceReinstall) {
 		this.forceReinstall = forceReinstall;
 	}
 
-	public String getJaulAppId() {
+	public void setUpdateIfNewerAvailable(boolean updateIfNewerAvailable) {
+        this.updateIfNewerAvailable = updateIfNewerAvailable;
+    }
+
+    public String getJaulAppId() {
 		return replaceWithTextOverride("jaulAppId", replaceVariables(this.jaulAppId), String.class);
 	}
 
