@@ -12,7 +12,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<build.projectProperties>${basedir}/jadaptive.build.properties</build.projectProperties>
 		<build.userProperties>${user.home}/.jadaptive.build.properties</build.userProperties>
-        <native.image.annotations.version>0.9.3-SNAPSHOT</native.image.annotations.version>
+        <native.image.annotations.version>0.9.3</native.image.annotations.version>
 	</properties>
 	<developers>
 		<developer>
