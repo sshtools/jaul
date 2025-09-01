@@ -38,7 +38,7 @@ public class AutoPreferenceBasedUpdateableAppContext extends PreferenceBasedUpda
 
 	@Override
 	public long getUpdatesDeferredUntil() {
-		return getPreferences().getLong(AppRegistry.KEY_DEFER, 0);
+		return getPreferences().getLong(AppRegistry.KEY_DEFER, 1);
 	}
 
 }

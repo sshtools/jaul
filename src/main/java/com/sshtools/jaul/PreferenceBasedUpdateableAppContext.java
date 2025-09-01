@@ -50,7 +50,7 @@ public class PreferenceBasedUpdateableAppContext implements UpdateableAppContext
 
 	@Override
 	public long getUpdatesDeferredUntil() {
-		return getPreferences().getLong(AppRegistry.KEY_DEFER, 0);
+		return getPreferences().getLong(AppRegistry.KEY_DEFER, 1);
 	}
 
 	@Override
