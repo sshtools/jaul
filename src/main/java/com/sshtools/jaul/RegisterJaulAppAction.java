@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.text.MessageFormat;
 
@@ -91,7 +92,7 @@ public class RegisterJaulAppAction extends AbstractInstallAction implements Jaul
 			Path sysprefs = javahome.resolve(".systemPrefs");
 			Path regprefs = sysprefs.resolve("com/sshtools/jaul/registry");
 			Path etcprefs = Paths.get("/etc/.java/.systemPrefs/com/sshtools/jaul/registry");
-			if(Files.exists(regprefs) && !Files.exists(etcprefs)) {
+			if (Files.exists(regprefs)/* && !Files.exists(etcprefs) */) {
 				Logger.getInstance().info(loggerSource, "Activating preferences work-around, copying " + regprefs + " to /etc/.java");
 				Files.createDirectories(etcprefs);
 				Files.walkFileTree(regprefs, new SimpleFileVisitor<Path>() {
@@ -107,7 +108,7 @@ public class RegisterJaulAppAction extends AbstractInstallAction implements Jaul
 			        public FileVisitResult visitFile(final Path file,
 			                final BasicFileAttributes attrs) throws IOException {
 			            Files.copy(file,
-			            		etcprefs.resolve(regprefs.relativize(file)));
+			            		etcprefs.resolve(regprefs.relativize(file)), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
 			            return FileVisitResult.CONTINUE;
 			        }
 			    });

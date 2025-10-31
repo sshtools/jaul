@@ -104,9 +104,7 @@ public final class CallInstall implements RemoteCallable {
 					int r;
 					int t = 0;
 					while ((r = inStream.read(buf)) != -1) {
-						debug("Read " + r + " bytes");
 						out.write(buf, 0, r);
-						debug("Written " + r + " bytes");
 						t += r;
 						if(progress != null)
 							progress.setPercentCompleted((int) (((double) t / (double) sz) * 100.0));
